@@ -20,14 +20,18 @@ header.top{position:sticky;top:8px;z-index:40;display:flex;justify-content:space
 .pills{display:flex;gap:6px;overflow-x:auto;padding:2px 0 6px;scrollbar-width:none}.pills::-webkit-scrollbar{display:none}
 .pills button{white-space:nowrap;border:0;padding:8px 14px;border-radius:999px;font-weight:800;cursor:pointer;background:rgba(255,255,255,.65);color:var(--ink)}
 .pills button.active{background:var(--a);color:#fff;box-shadow:0 4px 14px rgba(0,0,0,.2)}
-.task{display:flex;justify-content:space-between;gap:8px;padding:10px 2px;border-bottom:1px solid #e8eaf6;align-items:flex-start}
+.task{display:flex;flex-direction:column;gap:8px;padding:12px;background:rgba(255,255,255,.62);border:1px solid rgba(255,255,255,.7);border-radius:14px;margin-bottom:10px;align-items:stretch}
+.task .tt{font-size:15px;font-weight:800;line-height:1.35;word-break:break-word;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.task .badge{white-space:nowrap;flex:0 0 auto}
 .task b{font-size:15px}.meta{font-size:12px;color:#64748b;margin-top:2px}
-.task.pending{background:linear-gradient(90deg,rgba(251,191,36,.28),rgba(251,191,36,.04));border-left:5px solid #f59e0b;border-radius:10px;padding-left:8px;box-shadow:0 0 0 1px rgba(245,158,11,.15)}
-.task.ongoing{border-left:5px solid #3b82f6;border-radius:10px;padding-left:8px}
+.task.pending{background:linear-gradient(90deg,rgba(251,191,36,.30),rgba(255,255,255,.62));border-left:5px solid #f59e0b;box-shadow:0 0 0 1px rgba(245,158,11,.18)}
+.task.ongoing{border-left:5px solid #3b82f6}
 .moonbar{display:flex;align-items:center;gap:10px;background:linear-gradient(90deg,rgba(30,27,75,.88),rgba(76,29,149,.82));color:#fff;border-radius:14px;padding:10px 12px;margin-bottom:12px;box-shadow:0 6px 20px rgba(30,27,75,.35)}
-.moonbar .mi{font-size:30px;line-height:1}.moonbar b{font-size:14px}.moonbar small{opacity:.85}
+.moonbar .mi{font-size:30px;line-height:1}
+.realmoon{position:relative;border-radius:50%;overflow:hidden;flex:0 0 auto;background:#cbd5e1 url('https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/FullMoon2010.jpg/240px-FullMoon2010.jpg') center/cover;box-shadow:0 0 14px rgba(255,255,255,.55),inset -4px -4px 10px rgba(0,0,0,.35)}
+.realmoon i{position:absolute;top:0;bottom:0;background:rgba(10,8,30,.82);border-radius:50%}.moonbar b{font-size:14px}.moonbar small{opacity:.85}
 .badge{font-size:10px;padding:2px 7px;border-radius:999px;background:#e0e7ff;font-weight:800}
-.actions{display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end;max-width:46%}
+.actions{display:flex;flex-wrap:wrap;gap:5px;justify-content:flex-start}
 .actions button{padding:5px 9px;border-radius:999px;border:0;cursor:pointer;font-weight:700;font-size:12px}
 .done{background:#dcfce7}.abort{background:#fee2e2}.extra{background:#fef3c7}.ongoing{background:#dbeafe}
 .btn{border:0;padding:10px 16px;border-radius:999px;cursor:pointer;font-weight:800;background:rgba(255,255,255,.85)}
@@ -46,11 +50,20 @@ input,select,textarea{padding:10px;border-radius:10px;border:1px solid #cbd5e1;w
 </style></head>
 <body data-theme="lavender">
 <div class="wrap">
-<header class="glass top"><div><div class="logo">✨ TaskFlow</div><div class="todayline" id="todayLine"></div></div>
-<div><span title="Lavender" class="dot" style="background:linear-gradient(135deg,#6366f1,#ec4899)" onclick="setTheme('lavender')"></span><span title="Ocean" class="dot" style="background:linear-gradient(135deg,#0ea5e9,#22c55e)" onclick="setTheme('ocean')"></span><span title="Sunset" class="dot" style="background:linear-gradient(135deg,#f97316,#ec4899)" onclick="setTheme('sunset')"></span><span title="Forest" class="dot" style="background:linear-gradient(135deg,#16a34a,#0d9488)" onclick="setTheme('forest')"></span> <button class="btn" onclick="toggleNotifs()">🔔 <span id="bellCount">0</span></button></div></header>
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;position:relative;z-index:45">
+<div id="todayLine" style="color:#fff;font-weight:800;font-size:13px;text-shadow:0 1px 6px rgba(0,0,0,.35)"></div>
+<div style="position:relative">
+<button class="btn" style="box-shadow:0 6px 18px rgba(0,0,0,.22);font-size:15px" onclick="toggleMenu()">☰ Menu ▾</button>
+<div id="menuPanel" style="display:none;position:absolute;right:0;top:48px;width:250px;background:rgba(255,255,255,.97);border-radius:16px;box-shadow:0 14px 35px rgba(0,0,0,.28);padding:14px;z-index:80">
+<div style="font-weight:900;margin-bottom:6px">🎨 Theme colour</div>
+<div style="display:flex;gap:8px;align-items:center;margin-bottom:12px"><span class="dot" style="background:linear-gradient(135deg,#6366f1,#ec4899);margin:0" onclick="setTheme('lavender')"></span><span class="dot" style="background:linear-gradient(135deg,#0ea5e9,#22c55e);margin:0" onclick="setTheme('ocean')"></span><span class="dot" style="background:linear-gradient(135deg,#f97316,#ec4899);margin:0" onclick="setTheme('sunset')"></span><span class="dot" style="background:linear-gradient(135deg,#16a34a,#0d9488);margin:0" onclick="setTheme('forest')"></span><small style="color:#64748b;font-weight:700">Tap to change</small></div>
+<button class="btn" style="width:100%;text-align:left;background:#f1f5f9;margin-bottom:6px" onclick="toggleNotifs();toggleMenu(true)">🔔 Notifications (<span id="bellCount">0</span>)</button>
+<button class="btn" style="width:100%;text-align:left;background:#f1f5f9;margin-bottom:6px" onclick="exportCSV()">⬇ Export CSV (Excel backup)</button>
+<button class="btn" style="width:100%;text-align:left;background:#f1f5f9" onclick="showView('focus');toggleMenu(true)">🍅 Focus Timer</button>
+</div></div></div>
 
 <section id="view-home">
-<div class="moonbar"><div class="mi" id="moonIcon">🌔</div><div style="flex:1"><b id="moonName">Moon Phase</b><br><small id="moonMeta"></small></div><div style="text-align:right"><b id="moonIllum"></b><br><small>illuminated</small></div></div>
+<div class="moonbar"><div class="realmoon" id="moonImg" style="width:52px;height:52px"><i id="moonShadow"></i></div><div style="flex:1"><b id="moonName">Moon Phase</b><br><small id="moonMeta"></small></div><div style="text-align:right"><b id="moonIllum"></b><br><small>illuminated</small></div></div>
 <div class="glass">
 <div class="pills" id="rangeSeg">
 <button data-range="yesterday">Yesterday</button><button data-range="today" class="active">Today</button><button data-range="week">This Week</button><button data-range="month">This Month</button><button data-range="total">Total</button>
@@ -101,7 +114,7 @@ let notes=JSON.parse(localStorage.getItem('taskflow_notes')||'[]');
 let notifs=JSON.parse(localStorage.getItem('taskflow_notifs')||'[]');
 let range='today', shown=10, includeYesterday=false;
 function moonPhase(d){const syn=29.530588853;const ref=Date.UTC(2000,0,6,18,14)/86400000;const age=((d.getTime()/86400000-ref)%syn+syn)%syn;const illum=Math.round((1-Math.cos(2*Math.PI*age/syn))/2*100);const idx=Math.floor((age/syn*8)+0.5)%8;const names=['New Moon','Waxing Crescent','First Quarter','Waxing Gibbous','Full Moon','Waning Gibbous','Last Quarter','Waning Crescent'];const icons=['🌑','🌒','🌓','🌔','🌕','🌖','🌗','🌘'];const toFull=age<=14.77?Math.round((14.77-age)*10)/10:Math.round((age+14.77-29.53+ (14.77))*0+ (29.53-age+14.77)%29.53*10)/10;return{age:Math.round(age*10)/10,illum,name:names[idx],icon:icons[idx]}}
-function renderMoon(){const m=moonPhase(new Date());$('moonIcon').textContent=m.icon;$('moonName').textContent=m.name+' — '+fmt(localISO(new Date()));$('moonMeta').textContent='Moon age '+m.age+' days • '+(m.name==='Full Moon'?'Full Moon tonight!':m.age<14.77?'Full Moon in ~'+Math.max(0,Math.round(14.77-m.age))+' days':'Next New Moon in ~'+Math.max(0,Math.round(29.53-m.age))+' days');$('moonIllum').textContent=m.illum+'%'}
+function renderMoon(){const m=moonPhase(new Date());const sh=$('moonShadow');const w=Math.max(0,100-m.illum);if(m.age<=14.77){sh.style.left='0';sh.style.right='auto';sh.style.width=w+'%'}else{sh.style.right='0';sh.style.left='auto';sh.style.width=w+'%'}$('moonName').textContent=m.name+' — '+fmt(localISO(new Date()));$('moonMeta').textContent='Moon age '+m.age+' days • '+(m.name==='Full Moon'?'Full Moon tonight!':m.age<14.77?'Full Moon in ~'+Math.max(0,Math.round(14.77-m.age))+' days':'Next New Moon in ~'+Math.max(0,Math.round(29.53-m.age))+' days');$('moonIllum').textContent=m.illum+'%'}
 function save(){localStorage.setItem('taskflow_v2',JSON.stringify(tasks));localStorage.setItem('taskflow_notes',JSON.stringify(notes));localStorage.setItem('taskflow_notifs',JSON.stringify(notifs))}
 function setTheme(t){document.body.dataset.theme=t;localStorage.setItem('taskflow_theme',t)} setTheme(localStorage.getItem('taskflow_theme')||'lavender');
 function rangeDates(){const now=new Date();now.setHours(0,0,0,0);const today=localISO(now);
@@ -114,6 +127,7 @@ function inRange(t){const r=rangeDates(); if(r.date)return t.date===r.date; if(r
 document.querySelectorAll('#rangeSeg button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#rangeSeg button').forEach(x=>x.classList.remove('active'));b.classList.add('active');range=b.dataset.range;shown=10;includeYesterday=false;render()});
 function rangeName(){const r=rangeDates(); if(range==='today')return "Today — "+fmt(r.date); if(range==='yesterday')return "Yesterday — "+fmt(r.date); if(range==='week')return "This Week — "+fmt(r.from)+" to "+fmt(r.to); if(range==='month')return "This Month — "+parseD(r.ym+'-01').toLocaleString('en',{month:'long',year:'numeric'}); return "Total — All time"}
 function showView(v){['home','notes','focus'].forEach(x=>{$('view-'+x).style.display=x===v?'':'none';$('nav-'+x).classList.toggle('active',x===v)});window.scrollTo({top:0,behavior:'smooth'})}
+function toggleMenu(keep){const m=$('menuPanel');m.style.display=(keep||m.style.display==='block')?'none':'block'}
 function toggleNotifs(){const p=$('notifPanel');p.style.display=p.style.display==='block'?'none':'block';p.innerHTML=notifs.length?'<b>🔔 Notifications</b>'+notifs.slice().reverse().map(n=>'<div>• '+n+'</div>').join(''):'<b>🔔 No notifications yet</b>'}
 function render(){
  $('todayLine').textContent='Today is '+fmt(localISO(new Date()));
@@ -124,13 +138,13 @@ function render(){
  const q=$('q').value.toLowerCase(),fs=$('fStatus').value;
  const rank=s=>s==='Pending'?0:s.includes('Ongoing')?1:s.includes('Extra Day')?2:s.includes('Abort')?3:4;
  const match=t=>(!fs||t.status.includes(fs))&&(!q||t.title.toLowerCase().includes(q));
- const card=t=>`<div class="task ${t.status==='Pending'?'pending':t.status.includes('Ongoing')?'ongoing':''}"><div style="min-width:0"><b>${t.title}</b> ${t.status==='Pending'?'<span class="badge" style="background:#f59e0b;color:#fff">● PENDING</span>':''} ${t.carried?'<span class="badge">Carried +'+t.carried+'</span>':''}<div class="meta">${fmt(t.date)} • ${t.assignedBy} • ${t.status}${t.note?' • '+t.note:''}</div></div><div class="actions"><button class="done" onclick="setStatus(${t.id},'Done')">Done</button><button class="ongoing" onclick="setStatus(${t.id},'Ongoing')">Ongoing</button><button class="extra" onclick="extraDay(${t.id})">+1 Day</button><button class="abort" onclick="setStatus(${t.id},'Abort')">Abort</button>${t.status!=='Pending'?'<button style="background:#e5e7eb" onclick="setStatus('+t.id+',\'Pending\')">↩ Unmark</button>':''}</div></div>`;
+ const card=t=>`<div class="task ${t.status==='Pending'?'pending':t.status.includes('Ongoing')?'ongoing':''}"><div class="tt"><span>${t.title}</span>${t.status==='Pending'?'<span class="badge" style="background:#f59e0b;color:#fff">● PENDING</span>':''}${t.carried?'<span class="badge">Carried +'+t.carried+'</span>':''}</div><div class="meta">${fmt(t.date)} • ${t.assignedBy} • ${t.status}${t.note?' • '+t.note:''}</div><div class="actions"><button class="done" onclick="setStatus(${t.id},'Done')">Done</button><button class="ongoing" onclick="setStatus(${t.id},'Ongoing')">Ongoing</button><button class="extra" onclick="extraDay(${t.id})">+1 Day</button><button class="abort" onclick="setStatus(${t.id},'Abort')">Abort</button>${t.status!=='Pending'?'<button style="background:#e5e7eb" onclick="setStatus('+t.id+',\'Pending\')">↩ Unmark</button>':''}<button style="background:#111827;color:#fff" onclick="deleteTask(${t.id})">🗑 Delete</button></div></div>`;
  const split=list=>{const main=list.filter(t=>!t.status.includes('Done')).sort((a,b)=>rank(a.status)-rank(b.status)||a.id-b.id);const done=list.filter(t=>t.status.includes('Done')).sort((a,b)=>a.id-b.id);return{main,done}};
  const doneSection=(done,label)=>done.length?`<details style="margin-top:10px"><summary style="font-weight:800;cursor:pointer;color:#16a34a">✅ Done list — ${label} (${done.length}) — tap to view</summary>${done.map(card).join('')}</details>`:'';
  let htmlList='';
  if(range==='today'&&!fs){
    const s=split(filtered.filter(match)); htmlList=(s.main.map(card).join('')||'<p style="color:#64748b">No pending tasks today. 🎉</p>')+doneSection(s.done,'today');
-   if(includeYesterday){const y=new Date();y.setDate(y.getDate()-1);const yTasks=tasks.filter(t=>t.date===localISO(y)).filter(match);const ys=split(yTasks);htmlList+=`<h4 style="margin:16px 0 4px">Yesterday — ${fmt(localISO(y))}</h4>`+(ys.main.map(card).join('')||'<p style="color:#64748b">No pending tasks yesterday.</p>')+doneSection(ys.done,'yesterday');}
+   if(includeYesterday){const y=new Date();y.setDate(y.getDate()-1);const yTasks=tasks.filter(t=>t.date===localISO(y)).filter(match);const ys=split(yTasks);const ym=moonPhase(y);htmlList+=`<h4 style="margin:16px 0 4px">Yesterday — ${fmt(localISO(y))} &nbsp;<span style="font-weight:700;font-size:13px;color:#475569">${ym.icon} ${ym.name} • ${ym.illum}%</span></h4>`+(ys.main.map(card).join('')||'<p style="color:#64748b">No pending tasks yesterday.</p>')+doneSection(ys.done,'yesterday');}
    $('moreBtn').style.display=''; $('moreBtn').textContent=includeYesterday?'Yesterday shown below ↓':'Show more — see Yesterday\'s tasks ↓'; $('moreBtn').onclick=()=>{includeYesterday=true;render()};
  } else {
    const s=split(filtered.filter(match)); const limited=fs==='Done'?s.done.slice(0,shown):s.main.slice(0,shown);
@@ -144,6 +158,7 @@ function render(){
 let lastChange=null;
 function showToast(msg){$('toastText').textContent=msg;$('toast').style.display='block';clearTimeout(window._tt);window._tt=setTimeout(()=>$('toast').style.display='none',6000)}
 function undoLast(){if(!lastChange)return;tasks=lastChange.before;notifs=lastChange.notifsBefore||notifs;lastChange=null;$('toast').style.display='none';save();render()}
+function deleteTask(id){const t=tasks.find(x=>x.id===id);if(!t)return;if(!confirm('Delete this task permanently?\n\n"'+t.title+'"\n\nYou can UNDO right after deleting.'))return;lastChange={before:JSON.parse(JSON.stringify(tasks)),notifsBefore:JSON.parse(JSON.stringify(notifs))};tasks=tasks.filter(x=>x.id!==id);save();render();showToast('Deleted: '+t.title)}
 function setStatus(id,s){lastChange={before:JSON.parse(JSON.stringify(tasks)),notifsBefore:JSON.parse(JSON.stringify(notifs))};const t=tasks.find(x=>x.id===id);tasks=tasks.map(x=>x.id===id?{...x,status:s}:x);save();render();showToast((s==='Pending'?'Status cleared (back to Pending): ':'Marked '+s+': ')+(t?t.title:''))}
 function extraDay(id){lastChange={before:JSON.parse(JSON.stringify(tasks)),notifsBefore:JSON.parse(JSON.stringify(notifs))};tasks=tasks.map(t=>{if(t.id!==id)return t;const d=parseD(t.date);d.setDate(d.getDate()+1);const nd=localISO(d);notifs.push('Extra Day: "'+t.title+'" moved '+fmt(t.date)+' → '+fmt(nd));return{...t,date:nd,status:'Need A Extra Day',carried:(t.carried||0)+1}});save();render();showToast('Moved to next day — tap UNDO to revert')}
 function openModal(){$('modal').classList.add('open');$('fDate').value=range==='yesterday'?rangeDates().date:localISO(new Date());updPretty()}
