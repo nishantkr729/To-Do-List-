@@ -76,6 +76,7 @@ input,select,textarea{padding:10px;border-radius:10px;border:1px solid #cbd5e1;w
 <button class="fab" title="Add task" onclick="openModal()">+</button>
 <nav class="bottomnav"><button id="nav-home" class="active" onclick="showView('home')">Tasks</button><button id="nav-notes" onclick="showView('notes')">Notes</button><button id="nav-focus" onclick="showView('focus')">Focus</button></nav>
 
+<div id="toast" style="position:fixed;left:50%;transform:translateX(-50%);bottom:150px;background:#111827;color:#fff;padding:10px 14px;border-radius:999px;display:none;z-index:70;font-weight:700;box-shadow:0 8px 25px rgba(0,0,0,.3)"><span id="toastText"></span> <button onclick="undoLast()" style="margin-left:8px;background:#fbbf24;border:0;padding:5px 12px;border-radius:999px;font-weight:900;cursor:pointer">UNDO</button></div>
 <div class="modal" id="modal"><div class="sheet"><h3 style="margin-top:0">Add Task</h3>
 <div class="row"><input id="fTitle" placeholder="Task title"></div>
 <div class="row" style="display:flex;gap:8px"><input id="fDate" type="date"><select id="fBy"><option>Self</option><option>JJHM</option><option>Team</option><option>Aagaj</option><option>Interns</option><option>JSJB</option><option>NEP</option><option>DPO</option><option>Others</option></select></div>
@@ -115,13 +116,16 @@ function render(){
  $('listTitle').textContent=range==='today'?"Today's Tasks":range==='yesterday'?"Yesterday's Tasks":rangeName().split('—')[0]+' Tasks';
  const q=$('q').value.toLowerCase(),fs=$('fStatus').value;
  let show=filtered.filter(t=>(!fs||t.status.includes(fs))&&(!q||t.title.toLowerCase().includes(q))).sort((a,b)=>b.date.localeCompare(a.date)||a.id-b.id);
- $('list').innerHTML=show.slice(0,shown).map(t=>`<div class="task"><div style="min-width:0"><b>${t.title}</b> ${t.carried?'<span class="badge">Carried +'+t.carried+'</span>':''}<div class="meta">${fmt(t.date)} • ${t.assignedBy} • ${t.status}${t.note?' • '+t.note:''}</div></div><div class="actions"><button class="done" onclick="setStatus(${t.id},'Done')">Done</button><button class="ongoing" onclick="setStatus(${t.id},'Ongoing')">Ongoing</button><button class="extra" onclick="extraDay(${t.id})">+1 Day</button><button class="abort" onclick="setStatus(${t.id},'Abort')">Abort</button></div></div>`).join('')||'<p style="color:#64748b">No tasks here yet. Tap + to add one.</p>';
+ $('list').innerHTML=show.slice(0,shown).map(t=>`<div class="task"><div style="min-width:0"><b>${t.title}</b> ${t.carried?'<span class="badge">Carried +'+t.carried+'</span>':''}<div class="meta">${fmt(t.date)} • ${t.assignedBy} • ${t.status}${t.note?' • '+t.note:''}</div></div><div class="actions"><button class="done" onclick="setStatus(${t.id},'Done')">Done</button><button class="ongoing" onclick="setStatus(${t.id},'Ongoing')">Ongoing</button><button class="extra" onclick="extraDay(${t.id})">+1 Day</button><button class="abort" onclick="setStatus(${t.id},'Abort')">Abort</button>${t.status!=='Pending'?'<button style="background:#e5e7eb" onclick="setStatus('+t.id+',\'Pending\')">↩ Unmark</button>':''}</div></div>`).join('')||'<p style="color:#64748b">No tasks here yet. Tap + to add one.</p>';
  $('moreBtn').style.display=show.length>shown?'':'none'; $('moreBtn').textContent='Show more ('+(show.length-shown)+' left)';
  $('notes').innerHTML=notes.map(n=>'<div style="padding:8px;border-bottom:1px solid #eee">'+n+'</div>').join('');
  const quotes=["Small steps daily beat big plans someday.","Focus is a superpower.","Done is better than perfect.","Your future self is watching today."]; $('quote').textContent='“'+quotes[new Date().getDate()%quotes.length]+'”';
 }
-function setStatus(id,s){tasks=tasks.map(t=>t.id===id?{...t,status:s}:t);save();render()}
-function extraDay(id){tasks=tasks.map(t=>{if(t.id!==id)return t;const d=parseD(t.date);d.setDate(d.getDate()+1);const nd=localISO(d);notifs.push('Extra Day: "'+t.title+'" moved '+fmt(t.date)+' → '+fmt(nd));return{...t,date:nd,status:'Need A Extra Day',carried:(t.carried||0)+1}});save();render();alert('Moved to next day + notification added 🔔')}
+let lastChange=null;
+function showToast(msg){$('toastText').textContent=msg;$('toast').style.display='block';clearTimeout(window._tt);window._tt=setTimeout(()=>$('toast').style.display='none',6000)}
+function undoLast(){if(!lastChange)return;tasks=lastChange.before;notifs=lastChange.notifsBefore||notifs;lastChange=null;$('toast').style.display='none';save();render()}
+function setStatus(id,s){lastChange={before:JSON.parse(JSON.stringify(tasks)),notifsBefore:JSON.parse(JSON.stringify(notifs))};const t=tasks.find(x=>x.id===id);tasks=tasks.map(x=>x.id===id?{...x,status:s}:x);save();render();showToast((s==='Pending'?'Status cleared (back to Pending): ':'Marked '+s+': ')+(t?t.title:''))}
+function extraDay(id){lastChange={before:JSON.parse(JSON.stringify(tasks)),notifsBefore:JSON.parse(JSON.stringify(notifs))};tasks=tasks.map(t=>{if(t.id!==id)return t;const d=parseD(t.date);d.setDate(d.getDate()+1);const nd=localISO(d);notifs.push('Extra Day: "'+t.title+'" moved '+fmt(t.date)+' → '+fmt(nd));return{...t,date:nd,status:'Need A Extra Day',carried:(t.carried||0)+1}});save();render();showToast('Moved to next day — tap UNDO to revert')}
 function openModal(){$('modal').classList.add('open');$('fDate').value=range==='yesterday'?rangeDates().date:localISO(new Date());updPretty()}
 function closeModal(){$('modal').classList.remove('open')}
 function updPretty(){$('fDatePretty').textContent=$('fDate').value?('Selected: '+fmt($('fDate').value)):''}
