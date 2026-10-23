@@ -22,6 +22,10 @@ header.top{position:sticky;top:8px;z-index:40;display:flex;justify-content:space
 .pills button.active{background:var(--a);color:#fff;box-shadow:0 4px 14px rgba(0,0,0,.2)}
 .task{display:flex;justify-content:space-between;gap:8px;padding:10px 2px;border-bottom:1px solid #e8eaf6;align-items:flex-start}
 .task b{font-size:15px}.meta{font-size:12px;color:#64748b;margin-top:2px}
+.task.pending{background:linear-gradient(90deg,rgba(251,191,36,.28),rgba(251,191,36,.04));border-left:5px solid #f59e0b;border-radius:10px;padding-left:8px;box-shadow:0 0 0 1px rgba(245,158,11,.15)}
+.task.ongoing{border-left:5px solid #3b82f6;border-radius:10px;padding-left:8px}
+.moonbar{display:flex;align-items:center;gap:10px;background:linear-gradient(90deg,rgba(30,27,75,.88),rgba(76,29,149,.82));color:#fff;border-radius:14px;padding:10px 12px;margin-bottom:12px;box-shadow:0 6px 20px rgba(30,27,75,.35)}
+.moonbar .mi{font-size:30px;line-height:1}.moonbar b{font-size:14px}.moonbar small{opacity:.85}
 .badge{font-size:10px;padding:2px 7px;border-radius:999px;background:#e0e7ff;font-weight:800}
 .actions{display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end;max-width:46%}
 .actions button{padding:5px 9px;border-radius:999px;border:0;cursor:pointer;font-weight:700;font-size:12px}
@@ -46,6 +50,7 @@ input,select,textarea{padding:10px;border-radius:10px;border:1px solid #cbd5e1;w
 <div><span title="Lavender" class="dot" style="background:linear-gradient(135deg,#6366f1,#ec4899)" onclick="setTheme('lavender')"></span><span title="Ocean" class="dot" style="background:linear-gradient(135deg,#0ea5e9,#22c55e)" onclick="setTheme('ocean')"></span><span title="Sunset" class="dot" style="background:linear-gradient(135deg,#f97316,#ec4899)" onclick="setTheme('sunset')"></span><span title="Forest" class="dot" style="background:linear-gradient(135deg,#16a34a,#0d9488)" onclick="setTheme('forest')"></span> <button class="btn" onclick="toggleNotifs()">🔔 <span id="bellCount">0</span></button></div></header>
 
 <section id="view-home">
+<div class="moonbar"><div class="mi" id="moonIcon">🌔</div><div style="flex:1"><b id="moonName">Moon Phase</b><br><small id="moonMeta"></small></div><div style="text-align:right"><b id="moonIllum"></b><br><small>illuminated</small></div></div>
 <div class="glass">
 <div class="pills" id="rangeSeg">
 <button data-range="yesterday">Yesterday</button><button data-range="today" class="active">Today</button><button data-range="week">This Week</button><button data-range="month">This Month</button><button data-range="total">Total</button>
@@ -70,7 +75,7 @@ input,select,textarea{padding:10px;border-radius:10px;border:1px solid #cbd5e1;w
 
 <section id="view-notes" style="display:none"><div class="glass"><h3 style="margin-top:0">📝 Notes</h3><textarea id="noteText" rows="4" placeholder="Write a note..."></textarea><button class="btn primary" style="margin-top:8px" onclick="addNote()">Save Note</button><div id="notes"></div></div></section>
 
-<section id="view-focus" style="display:none"><div class="glass" style="text-align:center"><h3 style="margin-top:0">🍅 Focus Mode</h3><div id="timer" style="font-size:44px;font-weight:900">25:00</div><button class="btn primary" onclick="startPomodoro()">Start 25 min</button> <button class="btn" onclick="exportCSV()">Export CSV</button><p id="quote" style="color:#475569"></p></div></section>
+<section id="view-focus" style="display:none"><div class="glass" style="text-align:center"><h3 style="margin-top:0">🍅 Focus Mode</h3><div id="timer" style="font-size:44px;font-weight:900">25:00</div><div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin:10px 0"><button class="btn primary" id="pomStart" onclick="startPomodoro()">▶ Start 25 min</button><button class="btn" id="pomPause" onclick="pausePomodoro()">⏸ Pause</button><button class="btn" style="background:#fee2e2" onclick="stopPomodoro()">⏹ Stop / Reset</button><button class="btn" onclick="setPom(5)">5 min break</button><button class="btn" onclick="setPom(25)">25 min</button></div> <button class="btn" onclick="exportCSV()">Export CSV</button><p id="quote" style="color:#475569"></p></div></section>
 </div>
 
 <button class="fab" title="Add task" onclick="openModal()">+</button>
@@ -94,18 +99,20 @@ function fmt(s){const d=parseD(s);return ordinal(d.getDate())+' '+d.toLocaleStri
 let tasks=JSON.parse(localStorage.getItem('taskflow_v2')||'null')||SEED;
 let notes=JSON.parse(localStorage.getItem('taskflow_notes')||'[]');
 let notifs=JSON.parse(localStorage.getItem('taskflow_notifs')||'[]');
-let range='today', shown=10;
+let range='today', shown=10, includeYesterday=false;
+function moonPhase(d){const syn=29.530588853;const ref=Date.UTC(2000,0,6,18,14)/86400000;const age=((d.getTime()/86400000-ref)%syn+syn)%syn;const illum=Math.round((1-Math.cos(2*Math.PI*age/syn))/2*100);const idx=Math.floor((age/syn*8)+0.5)%8;const names=['New Moon','Waxing Crescent','First Quarter','Waxing Gibbous','Full Moon','Waning Gibbous','Last Quarter','Waning Crescent'];const icons=['🌑','🌒','🌓','🌔','🌕','🌖','🌗','🌘'];const toFull=age<=14.77?Math.round((14.77-age)*10)/10:Math.round((age+14.77-29.53+ (14.77))*0+ (29.53-age+14.77)%29.53*10)/10;return{age:Math.round(age*10)/10,illum,name:names[idx],icon:icons[idx]}}
+function renderMoon(){const m=moonPhase(new Date());$('moonIcon').textContent=m.icon;$('moonName').textContent=m.name+' — '+fmt(localISO(new Date()));$('moonMeta').textContent='Moon age '+m.age+' days • '+(m.name==='Full Moon'?'Full Moon tonight!':m.age<14.77?'Full Moon in ~'+Math.max(0,Math.round(14.77-m.age))+' days':'Next New Moon in ~'+Math.max(0,Math.round(29.53-m.age))+' days');$('moonIllum').textContent=m.illum+'%'}
 function save(){localStorage.setItem('taskflow_v2',JSON.stringify(tasks));localStorage.setItem('taskflow_notes',JSON.stringify(notes));localStorage.setItem('taskflow_notifs',JSON.stringify(notifs))}
 function setTheme(t){document.body.dataset.theme=t;localStorage.setItem('taskflow_theme',t)} setTheme(localStorage.getItem('taskflow_theme')||'lavender');
 function rangeDates(){const now=new Date();now.setHours(0,0,0,0);const today=localISO(now);
- if(range==='today')return{today};
+ if(range==='today')return{date:today};
  if(range==='yesterday'){const y=new Date(now);y.setDate(y.getDate()-1);return{date:localISO(y)}}
  if(range==='week'){const day=now.getDay()||7;const mon=new Date(now);mon.setDate(now.getDate()-day+1);const sun=new Date(mon);sun.setDate(mon.getDate()+6);return{from:localISO(mon),to:localISO(sun)}}
  if(range==='month'){return{ym:today.slice(0,7)}}
  return{}}
 function inRange(t){const r=rangeDates(); if(r.date)return t.date===r.date; if(r.from)return t.date>=r.from&&t.date<=r.to; if(r.ym)return t.date.startsWith(r.ym); return true}
-document.querySelectorAll('#rangeSeg button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#rangeSeg button').forEach(x=>x.classList.remove('active'));b.classList.add('active');range=b.dataset.range;shown=10;render()});
-function rangeName(){const r=rangeDates(); if(range==='today')return "Today — "+fmt(r.today); if(range==='yesterday')return "Yesterday — "+fmt(r.date); if(range==='week')return "This Week — "+fmt(r.from)+" to "+fmt(r.to); if(range==='month')return "This Month — "+parseD(r.ym+'-01').toLocaleString('en',{month:'long',year:'numeric'}); return "Total — All time"}
+document.querySelectorAll('#rangeSeg button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#rangeSeg button').forEach(x=>x.classList.remove('active'));b.classList.add('active');range=b.dataset.range;shown=10;includeYesterday=false;render()});
+function rangeName(){const r=rangeDates(); if(range==='today')return "Today — "+fmt(r.date); if(range==='yesterday')return "Yesterday — "+fmt(r.date); if(range==='week')return "This Week — "+fmt(r.from)+" to "+fmt(r.to); if(range==='month')return "This Month — "+parseD(r.ym+'-01').toLocaleString('en',{month:'long',year:'numeric'}); return "Total — All time"}
 function showView(v){['home','notes','focus'].forEach(x=>{$('view-'+x).style.display=x===v?'':'none';$('nav-'+x).classList.toggle('active',x===v)});window.scrollTo({top:0,behavior:'smooth'})}
 function toggleNotifs(){const p=$('notifPanel');p.style.display=p.style.display==='block'?'none':'block';p.innerHTML=notifs.length?'<b>🔔 Notifications</b>'+notifs.slice().reverse().map(n=>'<div>• '+n+'</div>').join(''):'<b>🔔 No notifications yet</b>'}
 function render(){
@@ -115,9 +122,22 @@ function render(){
  $('rangeLabel').textContent=rangeName()+' • '+filtered.length+' tasks'; $('bellCount').textContent=notifs.length;
  $('listTitle').textContent=range==='today'?"Today's Tasks":range==='yesterday'?"Yesterday's Tasks":rangeName().split('—')[0]+' Tasks';
  const q=$('q').value.toLowerCase(),fs=$('fStatus').value;
- let show=filtered.filter(t=>(!fs||t.status.includes(fs))&&(!q||t.title.toLowerCase().includes(q))).sort((a,b)=>b.date.localeCompare(a.date)||a.id-b.id);
- $('list').innerHTML=show.slice(0,shown).map(t=>`<div class="task"><div style="min-width:0"><b>${t.title}</b> ${t.carried?'<span class="badge">Carried +'+t.carried+'</span>':''}<div class="meta">${fmt(t.date)} • ${t.assignedBy} • ${t.status}${t.note?' • '+t.note:''}</div></div><div class="actions"><button class="done" onclick="setStatus(${t.id},'Done')">Done</button><button class="ongoing" onclick="setStatus(${t.id},'Ongoing')">Ongoing</button><button class="extra" onclick="extraDay(${t.id})">+1 Day</button><button class="abort" onclick="setStatus(${t.id},'Abort')">Abort</button>${t.status!=='Pending'?'<button style="background:#e5e7eb" onclick="setStatus('+t.id+',\'Pending\')">↩ Unmark</button>':''}</div></div>`).join('')||'<p style="color:#64748b">No tasks here yet. Tap + to add one.</p>';
- $('moreBtn').style.display=show.length>shown?'':'none'; $('moreBtn').textContent='Show more ('+(show.length-shown)+' left)';
+ const rank=s=>s==='Pending'?0:s.includes('Ongoing')?1:s.includes('Extra Day')?2:s.includes('Abort')?3:4;
+ const match=t=>(!fs||t.status.includes(fs))&&(!q||t.title.toLowerCase().includes(q));
+ const card=t=>`<div class="task ${t.status==='Pending'?'pending':t.status.includes('Ongoing')?'ongoing':''}"><div style="min-width:0"><b>${t.title}</b> ${t.status==='Pending'?'<span class="badge" style="background:#f59e0b;color:#fff">● PENDING</span>':''} ${t.carried?'<span class="badge">Carried +'+t.carried+'</span>':''}<div class="meta">${fmt(t.date)} • ${t.assignedBy} • ${t.status}${t.note?' • '+t.note:''}</div></div><div class="actions"><button class="done" onclick="setStatus(${t.id},'Done')">Done</button><button class="ongoing" onclick="setStatus(${t.id},'Ongoing')">Ongoing</button><button class="extra" onclick="extraDay(${t.id})">+1 Day</button><button class="abort" onclick="setStatus(${t.id},'Abort')">Abort</button>${t.status!=='Pending'?'<button style="background:#e5e7eb" onclick="setStatus('+t.id+',\'Pending\')">↩ Unmark</button>':''}</div></div>`;
+ const split=list=>{const main=list.filter(t=>!t.status.includes('Done')).sort((a,b)=>rank(a.status)-rank(b.status)||a.id-b.id);const done=list.filter(t=>t.status.includes('Done')).sort((a,b)=>a.id-b.id);return{main,done}};
+ const doneSection=(done,label)=>done.length?`<details style="margin-top:10px"><summary style="font-weight:800;cursor:pointer;color:#16a34a">✅ Done list — ${label} (${done.length}) — tap to view</summary>${done.map(card).join('')}</details>`:'';
+ let htmlList='';
+ if(range==='today'&&!fs){
+   const s=split(filtered.filter(match)); htmlList=(s.main.map(card).join('')||'<p style="color:#64748b">No pending tasks today. 🎉</p>')+doneSection(s.done,'today');
+   if(includeYesterday){const y=new Date();y.setDate(y.getDate()-1);const yTasks=tasks.filter(t=>t.date===localISO(y)).filter(match);const ys=split(yTasks);htmlList+=`<h4 style="margin:16px 0 4px">Yesterday — ${fmt(localISO(y))}</h4>`+(ys.main.map(card).join('')||'<p style="color:#64748b">No pending tasks yesterday.</p>')+doneSection(ys.done,'yesterday');}
+   $('moreBtn').style.display=''; $('moreBtn').textContent=includeYesterday?'Yesterday shown below ↓':'Show more — see Yesterday\'s tasks ↓'; $('moreBtn').onclick=()=>{includeYesterday=true;render()};
+ } else {
+   const s=split(filtered.filter(match)); const limited=fs==='Done'?s.done.slice(0,shown):s.main.slice(0,shown);
+   htmlList=(fs==='Done'?limited.map(card).join(''):limited.map(card).join('')+(fs?'':doneSection(s.done,'in this view'))) || '<p style="color:#64748b">No tasks here yet. Tap + to add one.</p>';
+   const totalForMore=fs==='Done'?s.done.length:s.main.length; $('moreBtn').style.display=totalForMore>shown?'':'none'; $('moreBtn').textContent='Show more ('+(totalForMore-shown)+' left)'; $('moreBtn').onclick=()=>{shown+=10;render()};
+ }
+ $('list').innerHTML=htmlList; renderMoon();
  $('notes').innerHTML=notes.map(n=>'<div style="padding:8px;border-bottom:1px solid #eee">'+n+'</div>').join('');
  const quotes=["Small steps daily beat big plans someday.","Focus is a superpower.","Done is better than perfect.","Your future self is watching today."]; $('quote').textContent='“'+quotes[new Date().getDate()%quotes.length]+'”';
 }
@@ -134,6 +154,11 @@ function addTask(){const title=$('fTitle').value.trim();if(!title)return alert('
 function quickAdd(){const title=$('quickTitle').value.trim();if(!title)return;tasks.push({id:Math.max(0,...tasks.map(t=>t.id))+1,title,date:localISO(new Date()),assignedBy:'Self',status:'Pending',note:'',carried:0});$('quickTitle').value='';if(range!=='today'&&range!=='total'&&range!=='month'&&range!=='week'){range='today';document.querySelectorAll('#rangeSeg button').forEach(x=>x.classList.toggle('active',x.dataset.range==='today'))}save();render()}
 function addNote(){if(!$('noteText').value.trim())return;notes.unshift($('noteText').value.trim());$('noteText').value='';save();render()}
 function exportCSV(){const csv='Date,Task,Assigned By,Status,Note\n'+tasks.map(t=>[t.date,'"'+t.title.replaceAll('"','""')+'"',t.assignedBy,t.status,'"'+(t.note||'')+'"'].join(',')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='tasks.csv';a.click()}
-let pomInt=null;function startPomodoro(){let s=25*60;clearInterval(pomInt);pomInt=setInterval(()=>{$('timer').textContent=Math.floor(s/60)+':'+String(s%60).padStart(2,'0');if(--s<0){clearInterval(pomInt);$('timer').textContent='Done! 🎉';alert('Focus complete! Take 5 min break.')}},1000)}
+let pomInt=null,pomSec=25*60,pomRunning=false;
+function drawPom(){$('timer').textContent=Math.floor(pomSec/60)+':'+String(pomSec%60).padStart(2,'0');$('pomPause').textContent=pomRunning?'⏸ Pause':'▶ Resume'}
+function startPomodoro(){if(pomRunning)return;if(pomSec<=0)pomSec=25*60;pomRunning=true;clearInterval(pomInt);pomInt=setInterval(()=>{pomSec--;drawPom();if(pomSec<0){stopPomodoro();$('timer').textContent='Done! 🎉';alert('Focus complete! Take 5 min break.')}},1000);drawPom()}
+function pausePomodoro(){pomRunning=false;clearInterval(pomInt);drawPom()}
+function stopPomodoro(){pomRunning=false;clearInterval(pomInt);pomSec=25*60;$('timer').textContent='25:00';drawPom()}
+function setPom(m){pomRunning=false;clearInterval(pomInt);pomSec=m*60;drawPom()}
 render();
 </script></body></html>
