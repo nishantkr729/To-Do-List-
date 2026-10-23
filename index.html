@@ -4,7 +4,11 @@
 <style>
 :root{--a:#6366f1;--b:#ec4899;--c:#8b5cf6;--ink:#1e293b}
 *{box-sizing:border-box}html{scroll-behavior:smooth}
-body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:var(--ink);min-height:100vh;background:linear-gradient(120deg,var(--a),var(--c),var(--b),#f59e0b);background-size:300% 300%;animation:bgmove 18s ease infinite}
+body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:var(--ink);min-height:100vh;background:radial-gradient(ellipse at 20% 20%,rgba(139,92,246,.55),transparent 55%),radial-gradient(ellipse at 85% 15%,rgba(14,165,233,.45),transparent 50%),radial-gradient(ellipse at 70% 85%,rgba(236,72,153,.38),transparent 55%),linear-gradient(160deg,#0b0620,#1b1040 45%,#0a1a3a);background-attachment:fixed}
+#stars{position:fixed;inset:0;z-index:0;pointer-events:none}
+.nebula{position:fixed;inset:-20%;z-index:0;pointer-events:none;background:radial-gradient(ellipse at 30% 40%,rgba(168,85,247,.20),transparent 45%),radial-gradient(ellipse at 75% 65%,rgba(56,189,248,.16),transparent 45%);animation:nebulaDrift 36s ease-in-out infinite alternate}
+@keyframes nebulaDrift{from{transform:translate(-2%,-1%) rotate(0deg) scale(1)}to{transform:translate(2%,2%) rotate(2deg) scale(1.06)}}
+.wrap{position:relative;z-index:1}
 @keyframes bgmove{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
 body[data-theme="ocean"]{--a:#0ea5e9;--b:#22c55e;--c:#06b6d4}body[data-theme="sunset"]{--a:#f97316;--b:#ec4899;--c:#f59e0b}body[data-theme="forest"]{--a:#16a34a;--b:#84cc16;--c:#0d9488}body[data-theme="lavender"]{--a:#6366f1;--b:#ec4899;--c:#8b5cf6}
 .wrap{max-width:860px;margin:0 auto;padding:12px 12px 96px}
@@ -28,7 +32,7 @@ header.top{position:sticky;top:8px;z-index:40;display:flex;justify-content:space
 .task.ongoing{border-left:5px solid #3b82f6}
 .moonbar{display:flex;align-items:center;gap:10px;background:linear-gradient(90deg,rgba(30,27,75,.88),rgba(76,29,149,.82));color:#fff;border-radius:14px;padding:10px 12px;margin-bottom:12px;box-shadow:0 6px 20px rgba(30,27,75,.35)}
 .moonbar .mi{font-size:30px;line-height:1}
-.realmoon{position:relative;border-radius:50%;overflow:hidden;flex:0 0 auto;background:#cbd5e1 url('https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/FullMoon2010.jpg/240px-FullMoon2010.jpg') center/cover;box-shadow:0 0 14px rgba(255,255,255,.55),inset -4px -4px 10px rgba(0,0,0,.35)}
+.realmoon{position:relative;border-radius:50%;overflow:hidden;flex:0 0 auto;background:#cbd5e1 ;box-shadow:0 0 14px rgba(255,255,255,.55),inset -4px -4px 10px rgba(0,0,0,.35)}
 .realmoon i{position:absolute;top:0;bottom:0;background:rgba(10,8,30,.82);border-radius:50%}.moonbar b{font-size:14px}.moonbar small{opacity:.85}
 .badge{font-size:10px;padding:2px 7px;border-radius:999px;background:#e0e7ff;font-weight:800}
 .actions{display:flex;flex-wrap:wrap;gap:5px;justify-content:flex-start}
@@ -49,6 +53,7 @@ input,select,textarea{padding:10px;border-radius:10px;border:1px solid #cbd5e1;w
 @media(min-width:640px){.stats{grid-template-columns:repeat(6,1fr)}.hero{gap:20px}.ring{flex-basis:120px;width:120px;height:120px}.ring span{width:92px;height:92px;font-size:21px}}
 </style></head>
 <body data-theme="lavender">
+<canvas id="stars"></canvas><div class="nebula"></div>
 <div class="wrap">
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;position:relative;z-index:45">
 <div id="todayLine" style="color:#fff;font-weight:800;font-size:13px;text-shadow:0 1px 6px rgba(0,0,0,.35)"></div>
@@ -63,7 +68,7 @@ input,select,textarea{padding:10px;border-radius:10px;border:1px solid #cbd5e1;w
 </div></div></div>
 
 <section id="view-home">
-<div class="moonbar"><div class="realmoon" id="moonImg" style="width:52px;height:52px"><i id="moonShadow"></i></div><div style="flex:1"><b id="moonName">Moon Phase</b><br><small id="moonMeta"></small></div><div style="text-align:right"><b id="moonIllum"></b><br><small>illuminated</small></div></div>
+<div class="moonbar"><div id="moonIcon" style="font-size:40px;line-height:1;filter:drop-shadow(0 0 10px rgba(255,255,255,.75))">🌔</div><div style="flex:1"><b id="moonName">Moon Phase</b><br><small id="moonMeta"></small></div><div style="text-align:right"><b id="moonIllum"></b><br><small>illuminated</small></div></div>
 <div class="glass">
 <div class="pills" id="rangeSeg">
 <button data-range="yesterday">Yesterday</button><button data-range="today" class="active">Today</button><button data-range="week">This Week</button><button data-range="month">This Month</button><button data-range="total">Total</button>
@@ -74,7 +79,7 @@ input,select,textarea{padding:10px;border-radius:10px;border:1px solid #cbd5e1;w
 <div class="stat"><b id="sDone">0</b><small>Completed</small></div><div class="stat"><b id="sLeft">0</b><small>Left</small></div><div class="stat"><b id="sTotal">0</b><small>Total*</small></div>
 <div class="stat"><b id="sOngoing">0</b><small>Ongoing</small></div><div class="stat"><b id="sAbort">0</b><small>Aborted</small></div><div class="stat"><b id="sExtra">0</b><small>Extra Day</small></div>
 </div></div>
-<div id="rangeLabel" style="font-weight:800;margin-top:10px;font-size:14px"></div><small style="color:#64748b">*Total excludes Aborted — aborted never counts in %</small>
+<div id="rangeLabel" style="font-weight:800;margin-top:10px;font-size:14px"></div>
 </div>
 
 <div class="glass">
@@ -108,13 +113,13 @@ const $=id=>document.getElementById(id);
 function localISO(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
 function parseD(s){const[a,b,c]=s.split('-').map(Number);return new Date(a,b-1,c)}
 function ordinal(n){const s=["th","st","nd","rd"],v=n%100;return n+(s[(v-20)%10]||s[v]||s[0])}
-function fmt(s){const d=parseD(s);return ordinal(d.getDate())+' '+d.toLocaleString('en',{month:'short'})+', '+d.toLocaleString('en',{weekday:'short'})+" '"+String(d.getFullYear()).slice(2)}
+function fmt(s){const d=parseD(s);return ordinal(d.getDate())+' '+d.toLocaleString('en',{month:'short'})+', '+d.toLocaleString('en',{weekday:'short'})+" "+String(d.getFullYear()).slice(2)}
 let tasks=JSON.parse(localStorage.getItem('taskflow_v2')||'null')||SEED;
 let notes=JSON.parse(localStorage.getItem('taskflow_notes')||'[]');
 let notifs=JSON.parse(localStorage.getItem('taskflow_notifs')||'[]');
 let range='today', shown=10, includeYesterday=false;
 function moonPhase(d){const syn=29.530588853;const ref=Date.UTC(2000,0,6,18,14)/86400000;const age=((d.getTime()/86400000-ref)%syn+syn)%syn;const illum=Math.round((1-Math.cos(2*Math.PI*age/syn))/2*100);const idx=Math.floor((age/syn*8)+0.5)%8;const names=['New Moon','Waxing Crescent','First Quarter','Waxing Gibbous','Full Moon','Waning Gibbous','Last Quarter','Waning Crescent'];const icons=['🌑','🌒','🌓','🌔','🌕','🌖','🌗','🌘'];const toFull=age<=14.77?Math.round((14.77-age)*10)/10:Math.round((age+14.77-29.53+ (14.77))*0+ (29.53-age+14.77)%29.53*10)/10;return{age:Math.round(age*10)/10,illum,name:names[idx],icon:icons[idx]}}
-function renderMoon(){const m=moonPhase(new Date());const sh=$('moonShadow');const w=Math.max(0,100-m.illum);if(m.age<=14.77){sh.style.left='0';sh.style.right='auto';sh.style.width=w+'%'}else{sh.style.right='0';sh.style.left='auto';sh.style.width=w+'%'}$('moonName').textContent=m.name+' — '+fmt(localISO(new Date()));$('moonMeta').textContent='Moon age '+m.age+' days • '+(m.name==='Full Moon'?'Full Moon tonight!':m.age<14.77?'Full Moon in ~'+Math.max(0,Math.round(14.77-m.age))+' days':'Next New Moon in ~'+Math.max(0,Math.round(29.53-m.age))+' days');$('moonIllum').textContent=m.illum+'%'}
+function renderMoon(){const m=moonPhase(new Date());$('moonIcon').textContent=m.icon;$('moonName').textContent=m.name+' — '+fmt(localISO(new Date()));$('moonMeta').textContent='Moon age '+m.age+' days • '+(m.name==='Full Moon'?'Full Moon tonight!':m.age<14.77?'Full Moon in ~'+Math.max(0,Math.round(14.77-m.age))+' days':'Next New Moon in ~'+Math.max(0,Math.round(29.53-m.age))+' days');$('moonIllum').textContent=m.illum+'%'}
 function save(){localStorage.setItem('taskflow_v2',JSON.stringify(tasks));localStorage.setItem('taskflow_notes',JSON.stringify(notes));localStorage.setItem('taskflow_notifs',JSON.stringify(notifs))}
 function setTheme(t){document.body.dataset.theme=t;localStorage.setItem('taskflow_theme',t)} setTheme(localStorage.getItem('taskflow_theme')||'lavender');
 function rangeDates(){const now=new Date();now.setHours(0,0,0,0);const today=localISO(now);
@@ -175,5 +180,7 @@ function startPomodoro(){if(pomRunning)return;if(pomSec<=0)pomSec=25*60;pomRunni
 function pausePomodoro(){pomRunning=false;clearInterval(pomInt);drawPom()}
 function stopPomodoro(){pomRunning=false;clearInterval(pomInt);pomSec=25*60;$('timer').textContent='25:00';drawPom()}
 function setPom(m){pomRunning=false;clearInterval(pomInt);pomSec=m*60;drawPom()}
+// Milky Way particles: slow drifting twinkling stars
+(function(){const cv=$('stars'),ctx=cv.getContext('2d');let W,H,stars=[];function size(){W=cv.width=innerWidth;H=cv.height=innerHeight;stars=Array.from({length:110},()=>({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.6+.3,s:Math.random()*.18+.03,tw:Math.random()*Math.PI*2,ts:Math.random()*.03+.008}))}size();addEventListener('resize',size);(function loop(){ctx.clearRect(0,0,W,H);for(const st of stars){st.y-=st.s;st.x+=Math.sin(st.tw)*.05;st.tw+=st.ts;if(st.y<-3){st.y=H+3;st.x=Math.random()*W}const a=.35+Math.abs(Math.sin(st.tw))*.65;ctx.beginPath();ctx.arc(st.x,st.y,st.r,0,7);ctx.fillStyle='rgba(255,255,255,'+a+')';ctx.shadowBlur=6;ctx.shadowColor='#c4b5fd';ctx.fill()}requestAnimationFrame(loop)})()})();
 render();
 </script></body></html>
