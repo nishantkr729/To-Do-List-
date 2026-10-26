@@ -161,6 +161,7 @@ let briefMsgs=[], briefIdx=0, briefTimer=null, extraOpen=false;
 function buildBrief(){
  if(!plans.length)return['✨ <b>Your future plans will shine here.</b> Add them from <b>Menu → 🌟 Future Plans</b> — then swipe through them here every day.'];
  return plans.map((t,i)=>'🌟 <b>Future Plan '+(i+1)+' of '+plans.length+':</b> '+t)}
+function showBrief(){const tk=$('ticker');if(!briefMsgs.length){tk.style.display='none';return}tk.style.display='block';const el=$('tickerInner');el.style.opacity=0;setTimeout(()=>{el.innerHTML=briefMsgs[briefIdx%briefMsgs.length];el.style.opacity=1;$('tickerDots').textContent=briefMsgs.map((_,i)=>i===briefIdx%briefMsgs.length?'●':'○').join(' ')},200)}
 function startBrief(){briefMsgs=buildBrief();briefIdx=0;showBrief();clearInterval(briefTimer);if(briefMsgs.length>1)briefTimer=setInterval(()=>{briefIdx++;showBrief()},5500)}
 function renderTickerAndExtra(){
  startBrief();
