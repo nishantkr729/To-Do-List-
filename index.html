@@ -69,13 +69,15 @@ input,select,textarea{padding:10px;border-radius:10px;border:1px solid #cbd5e1;w
 <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px"><span class="dot" style="background:linear-gradient(135deg,#6366f1,#ec4899);margin:0" onclick="setTheme('lavender')"></span><span class="dot" style="background:linear-gradient(135deg,#0ea5e9,#22c55e);margin:0" onclick="setTheme('ocean')"></span><span class="dot" style="background:linear-gradient(135deg,#f97316,#ec4899);margin:0" onclick="setTheme('sunset')"></span><span class="dot" style="background:linear-gradient(135deg,#16a34a,#0d9488);margin:0" onclick="setTheme('forest')"></span><small style="color:#64748b;font-weight:700">Tap to change</small></div>
 <button class="btn" style="width:100%;text-align:left;background:#f1f5f9;margin-bottom:6px" onclick="toggleNotifs();toggleMenu(true)">🔔 Notifications (<span id="bellCount">0</span>)</button>
 <button class="btn" style="width:100%;text-align:left;background:#f1f5f9;margin-bottom:6px" onclick="exportCSV()">⬇ Export CSV (Excel backup)</button>
+<button class="btn" style="width:100%;text-align:left;background:#f1f5f9;margin-bottom:6px" onclick="showView('monthly');toggleMenu(true)">🗓 Monthly Tasks</button>
+<button class="btn" style="width:100%;text-align:left;background:#f1f5f9;margin-bottom:6px" onclick="showView('plans');toggleMenu(true)">🌟 Future Plans</button>
 <button class="btn" style="width:100%;text-align:left;background:#f1f5f9" onclick="showView('focus');toggleMenu(true)">🍅 Focus Timer</button>
 <div style="border-top:1px solid #e2e8f0;margin-top:10px;padding-top:10px"><div style="font-weight:900;margin-bottom:4px">🔄 Sync across devices</div><div id="syncStatus" style="font-size:12px;color:#64748b;font-weight:700;margin-bottom:6px">Local only (this device)</div><button class="btn" id="syncBtn" style="width:100%;text-align:left;background:#eef2ff" onclick="syncButton()">Sign in with Google to Sync</button><div style="font-size:11px;color:#94a3b8;margin-top:4px">Sign in with the SAME Google account on phone & laptop — tasks then update everywhere automatically.</div></div>
 </div></div></div>
 
 <section id="view-home">
 <div class="moonbar"><div id="moonIcon" style="font-size:40px;line-height:1;filter:drop-shadow(0 0 10px rgba(255,255,255,.75))">🌔</div><div style="flex:1"><b id="moonName">Moon Phase</b><br><small id="moonMeta"></small></div><div style="text-align:right"><b id="moonIllum"></b><br><small>illuminated</small></div></div>
-<div id="ticker" title="Tap for next" style="display:none;background:linear-gradient(120deg,rgba(99,102,241,.94),rgba(14,165,183,.94));color:#fff;border-radius:14px;padding:11px 14px;margin-bottom:12px;box-shadow:0 6px 18px rgba(79,70,229,.28);cursor:pointer"><div style="font-size:10.5px;letter-spacing:1.5px;opacity:.85;font-weight:800">✦ TODAY BRIEF — USEFUL FOR YOU</div><div id="tickerInner" style="transition:opacity .45s ease;line-height:1.5;font-weight:600;font-size:13.5px;margin-top:2px"></div><div id="tickerDots" style="text-align:center;font-size:9px;letter-spacing:3px;opacity:.75;margin-top:3px"></div></div>
+<div id="ticker" title="Tap for next" style="display:none;background:linear-gradient(120deg,rgba(99,102,241,.94),rgba(14,165,183,.94));color:#fff;border-radius:14px;padding:11px 14px;margin-bottom:12px;box-shadow:0 6px 18px rgba(79,70,229,.28);cursor:pointer"><div style="font-size:10.5px;letter-spacing:1.5px;opacity:.85;font-weight:800">✦ MY FUTURE PLANS — SWIPE ↔</div><div id="tickerInner" style="transition:opacity .45s ease;line-height:1.5;font-weight:600;font-size:13.5px;margin-top:2px"></div><div id="tickerDots" style="text-align:center;font-size:9px;letter-spacing:3px;opacity:.75;margin-top:3px"></div></div>
 <div class="glass">
 <div class="pills" id="rangeSeg">
 <button data-range="yesterday">Yesterday</button><button data-range="today" class="active">Today</button><button data-range="tomorrow">Tomorrow 📅</button><button data-range="week">This Week</button><button data-range="month">This Month</button><button data-range="total">Total</button>
@@ -102,6 +104,10 @@ input,select,textarea{padding:10px;border-radius:10px;border:1px solid #cbd5e1;w
 <section id="view-notes" style="display:none"><div class="glass"><h3 style="margin-top:0">📝 Notes</h3><textarea id="noteText" rows="4" placeholder="Write a note..."></textarea><button class="btn primary" style="margin-top:8px" onclick="addNote()">Save Note</button><div id="notes"></div></div></section>
 
 <section id="view-focus" style="display:none"><div class="glass" style="text-align:center"><h3 style="margin-top:0">🍅 Focus Mode</h3><div id="timer" style="font-size:44px;font-weight:900">25:00</div><div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin:10px 0"><button class="btn primary" id="pomStart" onclick="startPomodoro()">▶ Start 25 min</button><button class="btn" id="pomPause" onclick="pausePomodoro()">⏸ Pause</button><button class="btn" style="background:#fee2e2" onclick="stopPomodoro()">⏹ Stop / Reset</button><button class="btn" onclick="setPom(5)">5 min break</button><button class="btn" onclick="setPom(25)">25 min</button></div> <button class="btn" onclick="exportCSV()">Export CSV</button><p id="quote" style="color:#475569"></p></div></section>
+
+<section id="view-monthly" style="display:none"><div class="glass"><h3 style="margin-top:0">🗓 Monthly Tasks</h3><p style="color:#64748b;font-size:13px;margin-top:-6px">Your big tasks & goals for each month. Add as many as you like — tick them off as you finish.</p><div id="monthlyList"></div></div></section>
+
+<section id="view-plans" style="display:none"><div class="glass"><h3 style="margin-top:0">🌟 My Future Plans</h3><p style="color:#64748b;font-size:13px;margin-top:-6px">Write where you see yourself going. These plans appear again and again on your home screen strip — swipe through them daily and stay connected to your future.</p><div style="display:flex;gap:6px"><input id="planText" placeholder="e.g. By December I will..." style="flex:1"><button class="btn primary" onclick="addPlan()">+ Add</button></div><div id="plansList" style="margin-top:10px"></div></div></section>
 </div>
 
 <button class="fab" title="Add task" onclick="openModal()">+</button>
@@ -124,11 +130,15 @@ function ordinal(n){const s=["th","st","nd","rd"],v=n%100;return n+(s[(v-20)%10]
 function fmt(s){const d=parseD(s);return ordinal(d.getDate())+' '+d.toLocaleString('en',{month:'short'})+', '+d.toLocaleString('en',{weekday:'short'})+" "+String(d.getFullYear()).slice(2)}
 let tasks=JSON.parse(localStorage.getItem('taskflow_v2')||'null')||SEED;
 let notes=JSON.parse(localStorage.getItem('taskflow_notes')||'[]');
+let plans=JSON.parse(localStorage.getItem('taskflow_plans')||'[]');
+let monthly=JSON.parse(localStorage.getItem('taskflow_monthly')||'{}');
+const MONTHS=[['2026-10','October 2026'],['2026-11','November 2026'],['2026-12','December 2026']];
+MONTHS.forEach(m=>{if(!Array.isArray(monthly[m[0]]))monthly[m[0]]=[]});
 let notifs=JSON.parse(localStorage.getItem('taskflow_notifs')||'[]');
 let range='today', shown=10, includeYesterday=false;
 function moonPhase(d){const syn=29.530588853;const ref=Date.UTC(2000,0,6,18,14)/86400000;const age=((d.getTime()/86400000-ref)%syn+syn)%syn;const illum=Math.round((1-Math.cos(2*Math.PI*age/syn))/2*100);const idx=Math.floor((age/syn*8)+0.5)%8;const names=['New Moon','Waxing Crescent','First Quarter','Waxing Gibbous','Full Moon','Waning Gibbous','Last Quarter','Waning Crescent'];const icons=['🌑','🌒','🌓','🌔','🌕','🌖','🌗','🌘'];const toFull=age<=14.77?Math.round((14.77-age)*10)/10:Math.round((age+14.77-29.53+ (14.77))*0+ (29.53-age+14.77)%29.53*10)/10;return{age:Math.round(age*10)/10,illum,name:names[idx],icon:icons[idx]}}
 function renderMoon(){const m=moonPhase(new Date());$('moonIcon').textContent=m.icon;$('moonName').textContent=m.name+' — '+fmt(localISO(new Date()));$('moonMeta').textContent='Moon age '+m.age+' days • '+(m.name==='Full Moon'?'Full Moon tonight!':m.age<14.77?'Full Moon in ~'+Math.max(0,Math.round(14.77-m.age))+' days':'Next New Moon in ~'+Math.max(0,Math.round(29.53-m.age))+' days');$('moonIllum').textContent=m.illum+'%'}
-function save(){localStorage.setItem('taskflow_v2',JSON.stringify(tasks));localStorage.setItem('taskflow_notes',JSON.stringify(notes));localStorage.setItem('taskflow_notifs',JSON.stringify(notifs));if(typeof scheduleCloudSave==='function')scheduleCloudSave()}
+function save(){localStorage.setItem('taskflow_v2',JSON.stringify(tasks));localStorage.setItem('taskflow_notes',JSON.stringify(notes));localStorage.setItem('taskflow_notifs',JSON.stringify(notifs));localStorage.setItem('taskflow_plans',JSON.stringify(plans));localStorage.setItem('taskflow_monthly',JSON.stringify(monthly));if(typeof scheduleCloudSave==='function')scheduleCloudSave()}
 function setTheme(t){document.body.dataset.theme=t;localStorage.setItem('taskflow_theme',t)} setTheme(localStorage.getItem('taskflow_theme')||'lavender');
 function rangeDates(){if(customDay)return{date:customDay};const now=new Date();now.setHours(0,0,0,0);const today=localISO(now);
  if(range==='today')return{date:today};
@@ -140,7 +150,7 @@ function rangeDates(){if(customDay)return{date:customDay};const now=new Date();n
 function inRange(t){const r=rangeDates(); if(r.date)return t.date===r.date; if(r.from)return t.date>=r.from&&t.date<=r.to; if(r.ym)return t.date.startsWith(r.ym); return true}
 document.querySelectorAll('#rangeSeg button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#rangeSeg button').forEach(x=>x.classList.remove('active'));b.classList.add('active');customDay=null;range=b.dataset.range;shown=10;includeYesterday=false;render()});
 function rangeName(){if(customDay)return 'Viewing — '+fmt(customDay);const r=rangeDates(); if(range==='today')return "Today — "+fmt(r.date); if(range==='yesterday')return "Yesterday — "+fmt(r.date); if(range==='tomorrow')return "Tomorrow — "+fmt(r.date)+" (plan ahead)"; if(range==='week')return "This Week — "+fmt(r.from)+" to "+fmt(r.to); if(range==='month')return "This Month — "+parseD(r.ym+'-01').toLocaleString('en',{month:'long',year:'numeric'}); return "Total — All time"}
-function showView(v){['home','notes','focus'].forEach(x=>{$('view-'+x).style.display=x===v?'':'none';$('nav-'+x).classList.toggle('active',x===v)});window.scrollTo({top:0,behavior:'smooth'})}
+function showView(v){['home','notes','focus','monthly','plans'].forEach(x=>{const s=$('view-'+x);if(s)s.style.display=x===v?'':'none';const n=$('nav-'+x);if(n)n.classList.toggle('active',x===v)});window.scrollTo({top:0,behavior:'smooth'})}
 function toggleMenu(keep){const m=$('menuPanel');m.style.display=(keep||m.style.display==='block')?'none':'block'}
 function toggleNotifs(){const p=$('notifPanel');p.style.display=p.style.display==='block'?'none':'block';p.innerHTML=notifs.length?'<b>🔔 Notifications</b>'+notifs.slice().reverse().map(n=>'<div>• '+n+'</div>').join(''):'<b>🔔 No notifications yet</b>'}
 
@@ -149,17 +159,9 @@ function repeatedMap(){const map={};const byTitle={};tasks.filter(t=>!t.status.i
  return map}
 let briefMsgs=[], briefIdx=0, briefTimer=null, extraOpen=false;
 function buildBrief(){
- const msgs=[]; const rep=window._repMap||repeatedMap(); const alerts=Object.values(rep);
- alerts.slice(0,3).forEach(a=>msgs.push('🔁 <b>'+a.title+'</b> — '+(a.carried>=3?('pushed to next day '+a.carried+' times'):('open on '+a.days+' different days'))+'. You keep postponing it — do this one FIRST.'));
- const tISO=localISO(new Date()); const td=tasks.filter(t=>t.date===tISO&&!t.status.includes('Abort')); const dn=td.filter(t=>t.status.includes('Done')).length;
- msgs.push('📅 <b>Today:</b> '+td.length+' tasks • '+dn+' done • '+(td.length-dn)+' left'+(td.length?' ('+Math.round(dn/Math.max(td.length,1)*100)+'% complete)':'')+'.');
- const mp=moonPhase(new Date()); const df=mp.age<=14.77?Math.round(14.77-mp.age):Math.round(29.53-mp.age+14.77); msgs.push(mp.icon+' <b>Tonight\'s moon:</b> '+mp.name+', '+mp.illum+'% lit'+(mp.name==='Full Moon'?' — full moon tonight!':df<=3?' — full moon in ~'+df+' day'+(df>1?'s':'')+'.':'.'));
- const ex=tasks.filter(t=>t.status.includes('Extra Day')&&!t.status.includes('Done'));
- if(ex.length)msgs.push('🔁 <b>'+ex.length+' task'+(ex.length>1?'s are':' is')+' waiting</b> in your Extra Day Box below — tap it to open.');
- msgs.push('💡 <b>Tip:</b> tap <b>Tomorrow 📅</b> above to plan tomorrow in advance, and use Quick Add\'s Tomorrow option.');
- return msgs}
-function showBrief(){const tk=$('ticker');if(!briefMsgs.length){tk.style.display='none';return}tk.style.display='block';const el=$('tickerInner');el.style.opacity=0;setTimeout(()=>{el.innerHTML=briefMsgs[briefIdx%briefMsgs.length];el.style.opacity=1;$('tickerDots').textContent=briefMsgs.map((_,i)=>i===briefIdx%briefMsgs.length?'●':'○').join(' ')},200)}
-function startBrief(){briefMsgs=buildBrief();briefIdx=0;showBrief();clearInterval(briefTimer);if(briefMsgs.length>1)briefTimer=setInterval(()=>{briefIdx++;showBrief()},6000)}
+ if(!plans.length)return['✨ <b>Your future plans will shine here.</b> Add them from <b>Menu → 🌟 Future Plans</b> — then swipe through them here every day.'];
+ return plans.map((t,i)=>'🌟 <b>Future Plan '+(i+1)+' of '+plans.length+':</b> '+t)}
+function startBrief(){briefMsgs=buildBrief();briefIdx=0;showBrief();clearInterval(briefTimer);if(briefMsgs.length>1)briefTimer=setInterval(()=>{briefIdx++;showBrief()},5500)}
 function renderTickerAndExtra(){
  startBrief();
  const ex=tasks.filter(t=>t.status.includes('Extra Day')&&!t.status.includes('Done'));
@@ -190,7 +192,7 @@ function render(){
    htmlList=(fs==='Done'?limited.map(card).join(''):limited.map(card).join('')+(fs?'':doneSection(s.done,'in this view'))) || '<p style="color:#64748b">No tasks here yet. Tap + to add one.</p>';
    const totalForMore=fs==='Done'?s.done.length:s.main.length; $('moreBtn').style.display=totalForMore>shown?'':'none'; $('moreBtn').textContent='Show more ('+(totalForMore-shown)+' left)'; $('moreBtn').onclick=()=>{shown+=10;render()};
  }
- $('list').innerHTML=htmlList; renderMoon(); renderTickerAndExtra();
+ $('list').innerHTML=htmlList; renderMoon(); renderTickerAndExtra(); renderMonthly(); renderPlans();
  $('notes').innerHTML=notes.map(n=>'<div style="padding:8px;border-bottom:1px solid #eee">'+n+'</div>').join('');
  const quotes=["Small steps daily beat big plans someday.","Focus is a superpower.","Done is better than perfect.","Your future self is watching today."]; $('quote').textContent='“'+quotes[new Date().getDate()%quotes.length]+'”';
 }
@@ -242,13 +244,23 @@ attachSug('quickTitle','sugQuick',s=>{quickBy=s.by||'Self';showToast('Suggestion
 attachSug('fTitle','sugModal',s=>{if(s.by){const sel=$('fBy');[...sel.options].forEach(o=>{if(o.text===s.by)sel.value=o.value||o.text});sel.value=s.by}});
 
 
+
+// ===== Monthly Tasks + Future Plans =====
+function renderMonthly(){const w=$('monthlyList');if(!w)return;w.innerHTML=MONTHS.map(([ym,label])=>{const items=monthly[ym]||[];const dn=items.filter(i=>i.done).length;return '<div style="border:1px solid #e8eaf6;border-radius:14px;padding:12px;margin-bottom:12px"><div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:16px">'+label+'</b><span class="badge">'+dn+'/'+items.length+' done</span></div>'+(items.length?items.map(i=>'<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid #f1f5f9"><input type="checkbox" '+(i.done?'checked':'')+' onchange="toggleMonthly(\''+ym+'\','+i.id+')" style="width:18px;height:18px;flex:0 0 auto"><span style="flex:1;'+(i.done?'text-decoration:line-through;color:#94a3b8':'')+'">'+i.text+'</span><button class="btn" style="padding:4px 9px;background:#fee2e2" onclick="delMonthly(\''+ym+'\','+i.id+')">✕</button></div>').join(''):'<div style="color:#94a3b8;font-size:13px;padding:6px 0">Nothing yet — add your first one below.</div>')+'<div style="display:flex;gap:6px;margin-top:9px"><input id="mi-'+ym+'" placeholder="Add something for '+label.split(' ')[0]+'..." style="flex:1" onkeydown="if(event.key===\'Enter\')addMonthly(\''+ym+'\')"><button class="btn primary" onclick="addMonthly(\''+ym+'\')">+ Add</button></div></div>'}).join('')}
+function addMonthly(ym){const inp=$('mi-'+ym);const v=inp.value.trim();if(!v)return;monthly[ym]=monthly[ym]||[];monthly[ym].push({id:Date.now(),text:v,done:false});inp.value='';save();renderMonthly();showToast('Added to '+ym)}
+function toggleMonthly(ym,id){const it=(monthly[ym]||[]).find(i=>i.id===id);if(it){it.done=!it.done;save();renderMonthly()}}
+function delMonthly(ym,id){monthly[ym]=(monthly[ym]||[]).filter(i=>i.id!==id);save();renderMonthly()}
+function renderPlans(){const w=$('plansList');if(!w)return;w.innerHTML=plans.length?plans.map((t,i)=>'<div style="display:flex;gap:8px;align-items:flex-start;padding:9px 0;border-bottom:1px solid #eef2ff"><span style="flex:1;line-height:1.5">🌟 '+t+'</span><button class="btn" style="padding:4px 9px;background:#fee2e2" onclick="delPlan('+i+')">✕</button></div>').join(''):'<div style="color:#94a3b8;font-size:13px">No plans yet — write your first future plan above.</div>'}
+function addPlan(){const inp=$('planText');const v=inp.value.trim();if(!v)return;plans.push(v);inp.value='';save();renderPlans();renderTickerAndExtra();showToast('🌟 Plan added — watch it on your home strip')}
+function delPlan(i){plans.splice(i,1);save();renderPlans();renderTickerAndExtra()}
+
 // ===== Cross-device SYNC via Firebase (free) =====
 const FIREBASE_CONFIG = {"apiKey": "AIzaSyB7IB6uvJi1GIPm-hb8c-tQ7H5wzC7ys2w", "authDomain": "taskflow-sync-e7815.firebaseapp.com", "projectId": "taskflow-sync-e7815", "storageBucket": "taskflow-sync-e7815.firebasestorage.app", "messagingSenderId": "912245809647", "appId": "1:912245809647:web:31ef1df99e0bf5a0c6961a"};
 let dbRef=null, syncUser=null, lastCloudWrite='', cloudSaveTimer=null, applyingRemote=false;
 function setSyncStatus(txt,btn){const s=$('syncStatus');if(s)s.textContent=txt;const b=$('syncBtn');if(b&&btn)b.textContent=btn}
 function scheduleCloudSave(){if(!syncUser||!dbRef||applyingRemote)return;clearTimeout(cloudSaveTimer);setSyncStatus('Syncing…');cloudSaveTimer=setTimeout(writeCloud,700)}
-async function writeCloud(){if(!syncUser||!dbRef)return;try{const payload={tasks,notes,notifs,updatedAt:new Date().toISOString()};lastCloudWrite=payload.updatedAt;await dbRef.set(payload);setSyncStatus('☁️ Synced ✓ '+new Date().toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit'})+' — '+(syncUser.email||''))}catch(e){setSyncStatus('⚠ Sync failed — saved on this device, will retry')}}
-function applyRemote(data){if(!data||data.updatedAt===lastCloudWrite)return;applyingRemote=true;tasks=data.tasks||[];notes=data.notes||[];notifs=data.notifs||[];localStorage.setItem('taskflow_v2',JSON.stringify(tasks));localStorage.setItem('taskflow_notes',JSON.stringify(notes));localStorage.setItem('taskflow_notifs',JSON.stringify(notifs));applyingRemote=false;render();showToast('☁️ Updated from your other device')}
+async function writeCloud(){if(!syncUser||!dbRef)return;try{const payload={tasks,notes,notifs,plans,monthly,updatedAt:new Date().toISOString()};lastCloudWrite=payload.updatedAt;await dbRef.set(payload);setSyncStatus('☁️ Synced ✓ '+new Date().toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit'})+' — '+(syncUser.email||''))}catch(e){setSyncStatus('⚠ Sync failed — saved on this device, will retry')}}
+function applyRemote(data){if(!data||data.updatedAt===lastCloudWrite)return;applyingRemote=true;tasks=data.tasks||[];notes=data.notes||[];notifs=data.notifs||[];if(Array.isArray(data.plans))plans=data.plans;if(data.monthly)monthly=data.monthly;localStorage.setItem('taskflow_v2',JSON.stringify(tasks));localStorage.setItem('taskflow_notes',JSON.stringify(notes));localStorage.setItem('taskflow_notifs',JSON.stringify(notifs));localStorage.setItem('taskflow_plans',JSON.stringify(plans));localStorage.setItem('taskflow_monthly',JSON.stringify(monthly));applyingRemote=false;renderMonthly();renderPlans();render();showToast('☁️ Updated from your other device')}
 function initSync(){if(!FIREBASE_CONFIG||typeof firebase==='undefined'){setSyncStatus('Local only (this device) — sync setup pending');return}
  try{firebase.initializeApp(FIREBASE_CONFIG);const auth=firebase.auth();const db=firebase.firestore();
  auth.onAuthStateChanged(async user=>{syncUser=user;
@@ -262,6 +274,7 @@ function syncButton(){if(!FIREBASE_CONFIG){alert('Sync is being set up — pleas
  if(syncUser){firebase.auth().signOut()}else{firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e=>alert('Sign-in could not complete. On phones, allow popups / try Chrome. Details: '+e.message))}}
 
 $('ticker').addEventListener('click',()=>{if(briefMsgs.length>1){briefIdx=(briefIdx+1)%briefMsgs.length;showBrief()}});
+let _tx=null;$('ticker').addEventListener('touchstart',e=>{_tx=e.changedTouches[0].clientX},{passive:true});$('ticker').addEventListener('touchend',e=>{if(_tx===null||briefMsgs.length<2)return;const dx=e.changedTouches[0].clientX-_tx;if(Math.abs(dx)>40){briefIdx=(briefIdx+(dx<0?1:-1)+briefMsgs.length)%briefMsgs.length;showBrief()} _tx=null},{passive:true});
 initSync();
 render();
 </script></body></html>
