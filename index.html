@@ -55,7 +55,8 @@ input,select,textarea{padding:10px;border-radius:10px;border:1px solid #cbd5e1;w
 .sheet .row{margin-bottom:10px}
 #notifPanel{display:none;margin-top:8px;font-size:13px}
 @media(min-width:640px){.stats{grid-template-columns:repeat(6,1fr)}.hero{gap:20px}.ring{flex-basis:120px;width:120px;height:120px}.ring span{width:92px;height:92px;font-size:21px}}
-</style></head>
+</style><script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+</head>
 <body data-theme="lavender">
 <canvas id="stars"></canvas><div class="nebula"></div>
 <div class="wrap">
@@ -69,13 +70,15 @@ input,select,textarea{padding:10px;border-radius:10px;border:1px solid #cbd5e1;w
 <button class="btn" style="width:100%;text-align:left;background:#f1f5f9;margin-bottom:6px" onclick="toggleNotifs();toggleMenu(true)">🔔 Notifications (<span id="bellCount">0</span>)</button>
 <button class="btn" style="width:100%;text-align:left;background:#f1f5f9;margin-bottom:6px" onclick="exportCSV()">⬇ Export CSV (Excel backup)</button>
 <button class="btn" style="width:100%;text-align:left;background:#f1f5f9" onclick="showView('focus');toggleMenu(true)">🍅 Focus Timer</button>
+<div style="border-top:1px solid #e2e8f0;margin-top:10px;padding-top:10px"><div style="font-weight:900;margin-bottom:4px">🔄 Sync across devices</div><div id="syncStatus" style="font-size:12px;color:#64748b;font-weight:700;margin-bottom:6px">Local only (this device)</div><button class="btn" id="syncBtn" style="width:100%;text-align:left;background:#eef2ff" onclick="syncButton()">Sign in with Google to Sync</button><div style="font-size:11px;color:#94a3b8;margin-top:4px">Sign in with the SAME Google account on phone & laptop — tasks then update everywhere automatically.</div></div>
 </div></div></div>
 
 <section id="view-home">
 <div class="moonbar"><div id="moonIcon" style="font-size:40px;line-height:1;filter:drop-shadow(0 0 10px rgba(255,255,255,.75))">🌔</div><div style="flex:1"><b id="moonName">Moon Phase</b><br><small id="moonMeta"></small></div><div style="text-align:right"><b id="moonIllum"></b><br><small>illuminated</small></div></div>
+<div id="ticker" style="display:none;background:linear-gradient(90deg,#7f1d1d,#b91c1c);color:#fff;border-radius:12px;padding:9px 0;margin-bottom:12px;overflow:hidden;white-space:nowrap;box-shadow:0 6px 18px rgba(127,29,29,.4)"><div id="tickerInner" style="display:inline-block;padding-left:100%;animation:tickmove 20s linear infinite;font-weight:800;font-size:13px"></div></div><style>@keyframes tickmove{from{transform:translateX(0)}to{transform:translateX(-100%)}}</style>
 <div class="glass">
 <div class="pills" id="rangeSeg">
-<button data-range="yesterday">Yesterday</button><button data-range="today" class="active">Today</button><button data-range="week">This Week</button><button data-range="month">This Month</button><button data-range="total">Total</button>
+<button data-range="yesterday">Yesterday</button><button data-range="today" class="active">Today</button><button data-range="tomorrow">Tomorrow 📅</button><button data-range="week">This Week</button><button data-range="month">This Month</button><button data-range="total">Total</button>
 </div>
 <div id="notifPanel"></div>
 <div class="hero"><div class="ring" id="ring" style="--p:0"><span id="ringText">0%</span></div>
@@ -86,8 +89,9 @@ input,select,textarea{padding:10px;border-radius:10px;border:1px solid #cbd5e1;w
 <div id="rangeLabel" style="font-weight:800;margin-top:10px;font-size:14px"></div>
 </div>
 
+<div class="glass" id="extraBox" style="padding:12px 14px"></div>
 <div class="glass">
-<div class="quick"><div style="flex:1;position:relative"><input id="quickTitle" placeholder="⚡ Quick add — type 2-3 letters, tap a suggestion" autocomplete="off"><div class="sugbox" id="sugQuick"></div></div><button class="btn primary" onclick="quickAdd()">Add</button></div>
+<div class="quick"><div style="flex:1;position:relative"><input id="quickTitle" placeholder="⚡ Quick add — type 2-3 letters, tap a suggestion" autocomplete="off"><div class="sugbox" id="sugQuick"></div></div><select id="quickWhen" style="max-width:118px" title="When?"><option value="today">Today</option><option value="tomorrow">Tomorrow 📅</option></select><button class="btn primary" onclick="quickAdd()">Add</button></div>
 <h3 id="listTitle" style="margin:14px 0 4px"></h3>
 <div style="display:flex;gap:6px;margin:8px 0"><input id="q" placeholder="Search in this view..." oninput="shown=10;render()"><select id="fStatus" onchange="shown=10;render()" style="max-width:140px"><option value="">All Status</option><option>Done</option><option>Pending</option><option>Ongoing</option><option>Abort</option><option>Need A Extra Day</option></select></div>
 <div id="list"></div>
@@ -124,43 +128,61 @@ let notifs=JSON.parse(localStorage.getItem('taskflow_notifs')||'[]');
 let range='today', shown=10, includeYesterday=false;
 function moonPhase(d){const syn=29.530588853;const ref=Date.UTC(2000,0,6,18,14)/86400000;const age=((d.getTime()/86400000-ref)%syn+syn)%syn;const illum=Math.round((1-Math.cos(2*Math.PI*age/syn))/2*100);const idx=Math.floor((age/syn*8)+0.5)%8;const names=['New Moon','Waxing Crescent','First Quarter','Waxing Gibbous','Full Moon','Waning Gibbous','Last Quarter','Waning Crescent'];const icons=['🌑','🌒','🌓','🌔','🌕','🌖','🌗','🌘'];const toFull=age<=14.77?Math.round((14.77-age)*10)/10:Math.round((age+14.77-29.53+ (14.77))*0+ (29.53-age+14.77)%29.53*10)/10;return{age:Math.round(age*10)/10,illum,name:names[idx],icon:icons[idx]}}
 function renderMoon(){const m=moonPhase(new Date());$('moonIcon').textContent=m.icon;$('moonName').textContent=m.name+' — '+fmt(localISO(new Date()));$('moonMeta').textContent='Moon age '+m.age+' days • '+(m.name==='Full Moon'?'Full Moon tonight!':m.age<14.77?'Full Moon in ~'+Math.max(0,Math.round(14.77-m.age))+' days':'Next New Moon in ~'+Math.max(0,Math.round(29.53-m.age))+' days');$('moonIllum').textContent=m.illum+'%'}
-function save(){localStorage.setItem('taskflow_v2',JSON.stringify(tasks));localStorage.setItem('taskflow_notes',JSON.stringify(notes));localStorage.setItem('taskflow_notifs',JSON.stringify(notifs))}
+function save(){localStorage.setItem('taskflow_v2',JSON.stringify(tasks));localStorage.setItem('taskflow_notes',JSON.stringify(notes));localStorage.setItem('taskflow_notifs',JSON.stringify(notifs));if(typeof scheduleCloudSave==='function')scheduleCloudSave()}
 function setTheme(t){document.body.dataset.theme=t;localStorage.setItem('taskflow_theme',t)} setTheme(localStorage.getItem('taskflow_theme')||'lavender');
 function rangeDates(){const now=new Date();now.setHours(0,0,0,0);const today=localISO(now);
  if(range==='today')return{date:today};
  if(range==='yesterday'){const y=new Date(now);y.setDate(y.getDate()-1);return{date:localISO(y)}}
+ if(range==='tomorrow'){const t2=new Date(now);t2.setDate(t2.getDate()+1);return{date:localISO(t2)}}
  if(range==='week'){const day=now.getDay()||7;const mon=new Date(now);mon.setDate(now.getDate()-day+1);const sun=new Date(mon);sun.setDate(mon.getDate()+6);return{from:localISO(mon),to:localISO(sun)}}
  if(range==='month'){return{ym:today.slice(0,7)}}
  return{}}
 function inRange(t){const r=rangeDates(); if(r.date)return t.date===r.date; if(r.from)return t.date>=r.from&&t.date<=r.to; if(r.ym)return t.date.startsWith(r.ym); return true}
 document.querySelectorAll('#rangeSeg button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#rangeSeg button').forEach(x=>x.classList.remove('active'));b.classList.add('active');range=b.dataset.range;shown=10;includeYesterday=false;render()});
-function rangeName(){const r=rangeDates(); if(range==='today')return "Today — "+fmt(r.date); if(range==='yesterday')return "Yesterday — "+fmt(r.date); if(range==='week')return "This Week — "+fmt(r.from)+" to "+fmt(r.to); if(range==='month')return "This Month — "+parseD(r.ym+'-01').toLocaleString('en',{month:'long',year:'numeric'}); return "Total — All time"}
+function rangeName(){const r=rangeDates(); if(range==='today')return "Today — "+fmt(r.date); if(range==='yesterday')return "Yesterday — "+fmt(r.date); if(range==='tomorrow')return "Tomorrow — "+fmt(r.date)+" (plan ahead)"; if(range==='week')return "This Week — "+fmt(r.from)+" to "+fmt(r.to); if(range==='month')return "This Month — "+parseD(r.ym+'-01').toLocaleString('en',{month:'long',year:'numeric'}); return "Total — All time"}
 function showView(v){['home','notes','focus'].forEach(x=>{$('view-'+x).style.display=x===v?'':'none';$('nav-'+x).classList.toggle('active',x===v)});window.scrollTo({top:0,behavior:'smooth'})}
 function toggleMenu(keep){const m=$('menuPanel');m.style.display=(keep||m.style.display==='block')?'none':'block'}
 function toggleNotifs(){const p=$('notifPanel');p.style.display=p.style.display==='block'?'none':'block';p.innerHTML=notifs.length?'<b>🔔 Notifications</b>'+notifs.slice().reverse().map(n=>'<div>• '+n+'</div>').join(''):'<b>🔔 No notifications yet</b>'}
+
+function repeatedMap(){const map={};const byTitle={};tasks.filter(t=>!t.status.includes('Done')&&!t.status.includes('Abort')).forEach(t=>{const k=t.title.toLowerCase();byTitle[k]=byTitle[k]||{title:t.title,dates:new Set(),carried:0};byTitle[k].dates.add(t.date);byTitle[k].carried=Math.max(byTitle[k].carried,t.carried||0)});
+ Object.values(byTitle).forEach(v=>{const times=Math.max(v.dates.size, v.carried); if(v.carried>=3||v.dates.size>=3) map[v.title.toLowerCase()]={title:v.title,times:Math.max(v.dates.size,v.carried),carried:v.carried,days:v.dates.size}});
+ return map}
+function renderTickerAndExtra(){
+ const rep=repeatedMap(); const alerts=Object.values(rep);
+ const tk=$('ticker');
+ if(alerts.length){tk.style.display='block';const msg=alerts.map(a=>'⚠ REPEATED TASK: "'+a.title+'" — '+(a.carried>=3?('pushed to next day '+a.carried+' times'):('still pending on '+a.days+' different days'))+' — you keep ignoring it, DO IT FIRST!').join('   •   ');$('tickerInner').textContent=msg+'   •   '+msg}
+ else tk.style.display='none';
+ const ex=tasks.filter(t=>t.status.includes('Extra Day')&&!t.status.includes('Done'));
+ $('extraBox').innerHTML='<b>🔁 Extra Day Box ('+ex.length+')</b>'+(ex.length?ex.map(t=>'<div style="display:flex;justify-content:space-between;gap:8px;padding:7px 0;border-bottom:1px solid #e8eaf6"><span><b>'+t.title+'</b> <span class="badge">Carried +'+(t.carried||0)+'</span><br><small style="color:#64748b">Now on '+fmt(t.date)+' • '+t.assignedBy+'</small></span><button class="btn" style="padding:6px 10px" onclick="viewDate(\''+t.date+'\')">View day</button></div>').join(''):'<div style="color:#64748b;font-size:13px;margin-top:4px">Empty — tasks you move with +1 Day will appear here and in that day\'s list.</div>');
+ window._repMap=rep;
+}
+function viewDate(ds){const now=new Date();now.setHours(0,0,0,0);const today=localISO(now);const tm=new Date(now);tm.setDate(tm.getDate()+1);const tom=localISO(tm);const y=new Date(now);y.setDate(y.getDate()-1);
+ let target='total'; if(ds===today)target='today'; else if(ds===tom)target='tomorrow'; else if(ds===localISO(y))target='yesterday'; else if(ds.slice(0,7)===today.slice(0,7))target='month'; else target='total';
+ range=target;includeYesterday=false;document.querySelectorAll('#rangeSeg button').forEach(x=>x.classList.toggle('active',x.dataset.range===target));render();window.scrollTo({top:0,behavior:'smooth'})}
+
 function render(){
  $('todayLine').textContent='Today is '+fmt(localISO(new Date()));
  const filtered=tasks.filter(inRange); const excl=filtered.filter(t=>!t.status.includes('Abort')); const done=excl.filter(t=>t.status.includes('Done')).length; const pct=excl.length?Math.round(done/excl.length*1000)/10:0;
- $('ring').style.setProperty('--p',pct);$('ringText').textContent=pct+'%'; sDone.textContent=done;sLeft.textContent=excl.length-done;sTotal.textContent=excl.length;sOngoing.textContent=filtered.filter(t=>t.status.includes('Ongoing')).length;sAbort.textContent=filtered.filter(t=>t.status.includes('Abort')).length;sExtra.textContent=filtered.filter(t=>t.status.includes('Extra Day')).length;
+ $('ring').style.setProperty('--p',pct);$('ringText').textContent=pct+'%'; sDone.textContent=done;sLeft.textContent=excl.length-done;sTotal.textContent=excl.length;sOngoing.textContent=filtered.filter(t=>t.status.includes('Ongoing')).length;sAbort.textContent=filtered.filter(t=>t.status.includes('Abort')).length;sExtra.textContent=tasks.filter(t=>t.status.includes('Extra Day')&&!t.status.includes('Done')).length;
  $('rangeLabel').textContent=rangeName()+' • '+filtered.length+' tasks'; $('bellCount').textContent=notifs.length;
  $('listTitle').textContent=range==='today'?"Today's Tasks":range==='yesterday'?"Yesterday's Tasks":rangeName().split('—')[0]+' Tasks';
  const q=$('q').value.toLowerCase(),fs=$('fStatus').value;
- const rank=s=>s==='Pending'?0:s.includes('Ongoing')?1:s.includes('Extra Day')?2:s.includes('Abort')?3:4;
+ const repM=repeatedMap(); window._repMap=repM; const rank=(s,t)=>{if(t&&repM[t.title.toLowerCase()])return -1; return s==='Pending'?0:s.includes('Ongoing')?1:s.includes('Extra Day')?2:s.includes('Abort')?3:4};
  const match=t=>(!fs||t.status.includes(fs))&&(!q||t.title.toLowerCase().includes(q));
- const card=t=>`<div class="task ${t.status==='Pending'?'pending':t.status.includes('Ongoing')?'ongoing':''}"><div class="tt"><span>${t.title}</span>${t.status==='Pending'?'<span class="badge" style="background:#f59e0b;color:#fff">● PENDING</span>':''}${t.carried?'<span class="badge">Carried +'+t.carried+'</span>':''}</div><div class="meta">${fmt(t.date)} • ${t.assignedBy} • ${t.status}${t.note?' • '+t.note:''}</div><div class="actions"><button class="done" onclick="setStatus(${t.id},'Done')">Done</button><button class="ongoing" onclick="setStatus(${t.id},'Ongoing')">Ongoing</button><button class="extra" onclick="extraDay(${t.id})">+1 Day</button><button class="abort" onclick="setStatus(${t.id},'Abort')">Abort</button>${t.status!=='Pending'?'<button style="background:#e5e7eb" onclick="setStatus('+t.id+',\'Pending\')">↩ Unmark</button>':''}<button style="background:#111827;color:#fff" onclick="deleteTask(${t.id})">🗑 Delete</button></div></div>`;
- const split=list=>{const main=list.filter(t=>!t.status.includes('Done')).sort((a,b)=>rank(a.status)-rank(b.status)||a.id-b.id);const done=list.filter(t=>t.status.includes('Done')).sort((a,b)=>a.id-b.id);return{main,done}};
+ const card=t=>`<div class="task ${t.status==='Pending'?'pending':t.status.includes('Ongoing')?'ongoing':''}"><div class="tt"><span>${t.title}</span>${t.status==='Pending'?'<span class="badge" style="background:#f59e0b;color:#fff">● PENDING</span>':''}${(window._repMap&&window._repMap[t.title.toLowerCase()])?'<span class="badge" style="background:#dc2626;color:#fff">🔁 REPEATED — DO FIRST</span>':''}${t.carried?'<span class="badge">Carried +'+t.carried+'</span>':''}</div><div class="meta">${fmt(t.date)} • ${t.assignedBy} • ${t.status}${t.note?' • '+t.note:''}</div><div class="actions"><button class="done" onclick="setStatus(${t.id},'Done')">Done</button><button class="ongoing" onclick="setStatus(${t.id},'Ongoing')">Ongoing</button><button class="extra" onclick="extraDay(${t.id})">+1 Day</button><button class="abort" onclick="setStatus(${t.id},'Abort')">Abort</button>${t.status!=='Pending'?'<button style="background:#e5e7eb" onclick="setStatus('+t.id+',\'Pending\')">↩ Unmark</button>':''}<button style="background:#111827;color:#fff" onclick="deleteTask(${t.id})">🗑 Delete</button></div></div>`;
+ const split=list=>{const main=list.filter(t=>!t.status.includes('Done')).sort((a,b)=>rank(a.status,a)-rank(b.status,b)||a.id-b.id);const done=list.filter(t=>t.status.includes('Done')).sort((a,b)=>a.id-b.id);return{main,done}};
  const doneSection=(done,label)=>done.length?`<details style="margin-top:10px"><summary style="font-weight:800;cursor:pointer;color:#16a34a">✅ Done list — ${label} (${done.length}) — tap to view</summary>${done.map(card).join('')}</details>`:'';
  let htmlList='';
- if(range==='today'&&!fs){
-   const s=split(filtered.filter(match)); htmlList=(s.main.map(card).join('')||'<p style="color:#64748b">No pending tasks today. 🎉</p>')+doneSection(s.done,'today');
+ if((range==='today'||range==='tomorrow')&&!fs){
+   const s=split(filtered.filter(match)); htmlList=(s.main.map(card).join('')||'<p style="color:#64748b">No pending tasks here. 🎉</p>')+doneSection(s.done,range);
    if(includeYesterday){const y=new Date();y.setDate(y.getDate()-1);const yTasks=tasks.filter(t=>t.date===localISO(y)).filter(match);const ys=split(yTasks);const ym=moonPhase(y);htmlList+=`<h4 style="margin:16px 0 4px">Yesterday — ${fmt(localISO(y))} &nbsp;<span style="font-weight:700;font-size:13px;color:#475569">${ym.icon} ${ym.name} • ${ym.illum}%</span></h4>`+(ys.main.map(card).join('')||'<p style="color:#64748b">No pending tasks yesterday.</p>')+doneSection(ys.done,'yesterday');}
-   $('moreBtn').style.display=''; $('moreBtn').textContent=includeYesterday?'Yesterday shown below ↓':'Show more — see Yesterday\'s tasks ↓'; $('moreBtn').onclick=()=>{includeYesterday=true;render()};
+   if(range==='tomorrow'){$('moreBtn').style.display='none'}else{$('moreBtn').style.display=''; $('moreBtn').textContent=includeYesterday?'Yesterday shown below ↓':'Show more — see Yesterday\'s tasks ↓'; $('moreBtn').onclick=()=>{includeYesterday=true;render()};}
  } else {
    const s=split(filtered.filter(match)); const limited=fs==='Done'?s.done.slice(0,shown):s.main.slice(0,shown);
    htmlList=(fs==='Done'?limited.map(card).join(''):limited.map(card).join('')+(fs?'':doneSection(s.done,'in this view'))) || '<p style="color:#64748b">No tasks here yet. Tap + to add one.</p>';
    const totalForMore=fs==='Done'?s.done.length:s.main.length; $('moreBtn').style.display=totalForMore>shown?'':'none'; $('moreBtn').textContent='Show more ('+(totalForMore-shown)+' left)'; $('moreBtn').onclick=()=>{shown+=10;render()};
  }
- $('list').innerHTML=htmlList; renderMoon();
+ $('list').innerHTML=htmlList; renderMoon(); renderTickerAndExtra();
  $('notes').innerHTML=notes.map(n=>'<div style="padding:8px;border-bottom:1px solid #eee">'+n+'</div>').join('');
  const quotes=["Small steps daily beat big plans someday.","Focus is a superpower.","Done is better than perfect.","Your future self is watching today."]; $('quote').textContent='“'+quotes[new Date().getDate()%quotes.length]+'”';
 }
@@ -175,7 +197,7 @@ function closeModal(){$('modal').classList.remove('open')}
 function updPretty(){$('fDatePretty').textContent=$('fDate').value?('Selected: '+fmt($('fDate').value)):''}
 $('fDate').addEventListener('change',updPretty);
 function addTask(){const title=$('fTitle').value.trim();if(!title)return alert('Enter title');tasks.push({id:Math.max(0,...tasks.map(t=>t.id))+1,title,date:$('fDate').value||localISO(new Date()),assignedBy:$('fBy').value,status:'Pending',note:$('fNote').value,carried:0});$('fTitle').value='';$('fNote').value='';save();closeModal();render()}
-function quickAdd(){const title=$('quickTitle').value.trim();if(!title)return;tasks.push({id:Math.max(0,...tasks.map(t=>t.id))+1,title,date:localISO(new Date()),assignedBy:quickBy||'Self',status:'Pending',note:'',carried:0});quickBy='Self';$('quickTitle').value='';if(range!=='today'&&range!=='total'&&range!=='month'&&range!=='week'){range='today';document.querySelectorAll('#rangeSeg button').forEach(x=>x.classList.toggle('active',x.dataset.range==='today'))}save();render()}
+function quickAdd(){const title=$('quickTitle').value.trim();if(!title)return;tasks.push({id:Math.max(0,...tasks.map(t=>t.id))+1,title,date:($('quickWhen')&&$('quickWhen').value==='tomorrow')?(()=>{const d=new Date();d.setDate(d.getDate()+1);return localISO(d)})():localISO(new Date()),assignedBy:quickBy||'Self',status:'Pending',note:'',carried:0});quickBy='Self';$('quickTitle').value='';if(range!=='today'&&range!=='total'&&range!=='month'&&range!=='week'){range='today';document.querySelectorAll('#rangeSeg button').forEach(x=>x.classList.toggle('active',x.dataset.range==='today'))}save();render()}
 function addNote(){if(!$('noteText').value.trim())return;notes.unshift($('noteText').value.trim());$('noteText').value='';save();render()}
 function exportCSV(){const csv='Date,Task,Assigned By,Status,Note\n'+tasks.map(t=>[t.date,'"'+t.title.replaceAll('"','""')+'"',t.assignedBy,t.status,'"'+(t.note||'')+'"'].join(',')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='tasks.csv';a.click()}
 let pomInt=null,pomSec=25*60,pomRunning=false;
@@ -211,5 +233,26 @@ $('quickTitle').addEventListener('keydown',e=>{if(e.key==='Enter'&&$('sugQuick')
 attachSug('quickTitle','sugQuick',s=>{quickBy=s.by||'Self';showToast('Suggestion picked: '+s.t+' ('+(s.by||'Self')+')')});
 attachSug('fTitle','sugModal',s=>{if(s.by){const sel=$('fBy');[...sel.options].forEach(o=>{if(o.text===s.by)sel.value=o.value||o.text});sel.value=s.by}});
 
+
+// ===== Cross-device SYNC via Firebase (free) =====
+const FIREBASE_CONFIG = {"apiKey": "AIzaSyB7IB6uvJi1GIPm-hb8c-tQ7H5wzC7ys2w", "authDomain": "taskflow-sync-e7815.firebaseapp.com", "projectId": "taskflow-sync-e7815", "storageBucket": "taskflow-sync-e7815.firebasestorage.app", "messagingSenderId": "912245809647", "appId": "1:912245809647:web:31ef1df99e0bf5a0c6961a"};
+let dbRef=null, syncUser=null, lastCloudWrite='', cloudSaveTimer=null, applyingRemote=false;
+function setSyncStatus(txt,btn){const s=$('syncStatus');if(s)s.textContent=txt;const b=$('syncBtn');if(b&&btn)b.textContent=btn}
+function scheduleCloudSave(){if(!syncUser||!dbRef||applyingRemote)return;clearTimeout(cloudSaveTimer);setSyncStatus('Syncing…');cloudSaveTimer=setTimeout(writeCloud,700)}
+async function writeCloud(){if(!syncUser||!dbRef)return;try{const payload={tasks,notes,notifs,updatedAt:new Date().toISOString()};lastCloudWrite=payload.updatedAt;await dbRef.set(payload);setSyncStatus('☁️ Synced ✓ '+new Date().toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit'})+' — '+(syncUser.email||''))}catch(e){setSyncStatus('⚠ Sync failed — saved on this device, will retry')}}
+function applyRemote(data){if(!data||data.updatedAt===lastCloudWrite)return;applyingRemote=true;tasks=data.tasks||[];notes=data.notes||[];notifs=data.notifs||[];localStorage.setItem('taskflow_v2',JSON.stringify(tasks));localStorage.setItem('taskflow_notes',JSON.stringify(notes));localStorage.setItem('taskflow_notifs',JSON.stringify(notifs));applyingRemote=false;render();showToast('☁️ Updated from your other device')}
+function initSync(){if(!FIREBASE_CONFIG||typeof firebase==='undefined'){setSyncStatus('Local only (this device) — sync setup pending');return}
+ try{firebase.initializeApp(FIREBASE_CONFIG);const auth=firebase.auth();const db=firebase.firestore();
+ auth.onAuthStateChanged(async user=>{syncUser=user;
+  if(user){dbRef=db.collection('users').doc(user.uid).collection('data').doc('main');setSyncStatus('☁️ Signed in: '+(user.email||''),'Sign out of Sync');showToast('Sync ON — changes will appear on all your devices');
+   const snap=await dbRef.get();
+   if(snap.exists){const remote=snap.data();const key=t=>t.title.toLowerCase()+'|'+t.date;const rkeys=new Set((remote.tasks||[]).map(key));const extras=(tasks||[]).filter(t=>!rkeys.has(key(t)));applyRemote(remote);if(extras.length){tasks=[...tasks,...extras];localStorage.setItem('taskflow_v2',JSON.stringify(tasks));render();await writeCloud();showToast('☁️ Merged '+extras.length+' tasks from this device into your synced list')}}else{await writeCloud()}
+   dbRef.onSnapshot(doc=>{if(doc.exists)applyRemote(doc.data())});
+  }else{dbRef=null;setSyncStatus('Local only (this device) — sign in to sync everywhere','Sign in with Google to Sync')}
+ })}catch(e){setSyncStatus('⚠ Sync unavailable — local mode')}}
+function syncButton(){if(!FIREBASE_CONFIG){alert('Sync is being set up — please try again shortly.');return}
+ if(syncUser){firebase.auth().signOut()}else{firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e=>alert('Sign-in could not complete. On phones, allow popups / try Chrome. Details: '+e.message))}}
+
+initSync();
 render();
 </script></body></html>
