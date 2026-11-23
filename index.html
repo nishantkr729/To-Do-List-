@@ -167,7 +167,7 @@ function toggleNotifs(){const p=$('notifPanel');p.style.display=p.style.display=
 
 function normTitle(t){return (t||'').toLowerCase().trim().replace(/\s+/g,' ')}
 function repeatedMap(){const groups={};tasks.forEach(t=>{const k=normTitle(t.title);if(!k)return;(groups[k]=groups[k]||[]).push(t)});const map={};Object.entries(groups).forEach(([k,arr])=>{const dates=new Set(arr.map(t=>t.date));if(arr.length>=2&&dates.size>=2)map[k]={count:arr.length,open:arr.filter(t=>!t.status.includes('Done')).length,dates:dates.size}});return map}
-let briefMsgs=[], briefIdx=0, briefTimer=null, extraOpen=true;
+let briefMsgs=[], briefIdx=0, briefTimer=null, extraOpen=false;
 function buildBrief(){
  if(!plans.length)return['✨ <b>Your future plans will shine here.</b> Add them from <b>Menu → 🌟 Future Plans</b> — then swipe through them here every day.'];
  return plans.map(t=>'🌟 '+t)}
@@ -180,13 +180,14 @@ function renderTickerAndExtra(){
  const todays=open.filter(t=>t.date===tISO).sort((a,b)=>a.id-b.id);
  const overdue=open.filter(t=>t.date<tISO).sort((a,b)=>a.date<b.date?-1:1);
  const repM=window._repMap||repeatedMap();
- const row=t=>{const rep=repM[normTitle(t.title)];return '<div style="display:flex;justify-content:space-between;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid rgba(220,38,38,.14)"><span style="flex:1"><b>'+t.title+'</b>'+(rep?' <span class="badge" style="background:#7c3aed;color:#fff">🔁 Repeated ×'+rep.count+'</span>':'')+'<br><small style="color:'+(t.date<tISO?'#dc2626':'#64748b')+'">'+(t.date<tISO?'⚠ Overdue • ':'')+fmt(t.date)+(t.time?' • ⏰ '+fmtTime(t.time):'')+' • '+t.assignedBy+'</small></span><span style="display:flex;gap:5px;flex:0 0 auto"><button class="btn" style="padding:6px 10px;background:#dcfce7" onclick="setStatus('+t.id+',\'Done\')">✓ Done</button><button class="btn" style="padding:6px 10px;background:#fef3c7" onclick="notDoneTomorrow('+t.id+')">→ Tomorrow</button></span></div>'};
+ const row=t=>{const rep=repM[normTitle(t.title)];return '<div style="display:flex;justify-content:space-between;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.28)"><span style="flex:1"><b>'+t.title+'</b>'+(rep?' <span class="badge" style="background:#7c3aed;color:#fff">🔁 Repeated ×'+rep.count+'</span>':'')+'<br><small style="color:#fecaca">'+(t.date<tISO?'⚠ Overdue • ':'')+fmt(t.date)+(t.time?' • ⏰ '+fmtTime(t.time):'')+' • '+t.assignedBy+'</small></span><span style="display:flex;gap:5px;flex:0 0 auto"><button class="btn" style="padding:6px 10px;background:#dcfce7" onclick="setStatus('+t.id+',\'Done\')">✓ Done</button><button class="btn" style="padding:6px 10px;background:#fef3c7" onclick="notDoneTomorrow('+t.id+')">→ Tomorrow</button></span></div>'};
  const allCount=todays.length+overdue.length;
- $('extraBox').innerHTML='<div onclick="extraOpen=!extraOpen;renderTickerAndExtra()" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer"><b style="font-size:17px;color:#b91c1c">⚠ TASK NOT DONE TODAY ('+todays.length+')</b><span style="font-size:12px;color:#b91c1c;font-weight:700">'+(extraOpen?'Hide ▴':'Tap to open ▾')+'</span></div>'
- +(extraOpen?('<div style="font-size:12.5px;color:#7f1d1d;margin:5px 0 2px">Everything below is still open. Tap <b>✓ Done</b> to finish it, or <b>→ Tomorrow</b> and it moves to tomorrow automatically — nothing is aborted or lost any more.</div>'
- +(todays.length?todays.map(row).join(''):'<div style="color:#16a34a;font-size:13.5px;font-weight:700;padding:6px 0">All of today\'s tasks are done 🎉</div>')
- +(overdue.length?'<div style="font-weight:800;color:#b91c1c;margin:10px 0 2px">Overdue from earlier days ('+overdue.length+')</div>'+overdue.map(row).join(''):'')
- +(allCount?'<button class="btn" style="width:100%;margin-top:10px;background:#b91c1c;color:#fff" onclick="moveAllNotDone()">Move all not-done ('+allCount+') to tomorrow →</button>':'')
+ $('extraBox').style.cssText=allCount?('background:linear-gradient(120deg,rgba(220,38,38,.96),rgba(185,28,28,.94));color:#fff;border:1px solid rgba(255,255,255,.5);box-shadow:0 10px 28px rgba(220,38,38,.45);padding:12px 14px'):('background:linear-gradient(120deg,rgba(22,163,74,.92),rgba(21,128,61,.9));color:#fff;border:1px solid rgba(255,255,255,.5);box-shadow:0 8px 22px rgba(22,163,74,.35);padding:12px 14px');
+ $('extraBox').innerHTML='<div onclick="extraOpen=!extraOpen;renderTickerAndExtra()" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer"><b style="font-size:17.5px;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.3)">'+(allCount?'⚠ TASK NOT DONE TODAY ('+todays.length+')':'✓ NOTHING LEFT TODAY')+'</b><span style="font-size:12px;color:#fff;font-weight:800;background:rgba(255,255,255,.22);padding:4px 10px;border-radius:999px">'+(extraOpen?'Hide ▴':'Tap to open ▾')+'</span></div>'
+ +(extraOpen?('<div style="font-size:12.5px;color:#fee2e2;margin:5px 0 2px">Everything below is still open. Tap <b>✓ Done</b> to finish it, or <b>→ Tomorrow</b> and it moves to tomorrow automatically — nothing is aborted or lost any more.</div>'
+ +(todays.length?todays.map(row).join(''):'<div style="color:#dcfce7;font-size:13.5px;font-weight:700;padding:6px 0">All of today\'s tasks are done 🎉</div>')
+ +(overdue.length?'<div style="font-weight:800;color:#fff;margin:10px 0 2px">Overdue from earlier days ('+overdue.length+')</div>'+overdue.map(row).join(''):'')
+ +(allCount?'<button class="btn" style="width:100%;margin-top:10px;background:#fff;color:#b91c1c" onclick="moveAllNotDone()">Move all not-done ('+allCount+') to tomorrow →</button>':'')
  ):'');
  window._repMap=repM;
 }
